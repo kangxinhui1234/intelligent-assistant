@@ -1,0 +1,25 @@
+# IntelliJ IDEA JVM 选项配置
+# 在IDEA的 Help -> Edit Custom VM Options 中添加以下配置
+
+# 编码设置
+-Dfile.encoding=UTF-8
+-Dsun.jnu.encoding=UTF-8
+-Dconsole.encoding=UTF-8
+-Duser.timezone=Asia/Shanghai
+
+# 禁用一些警告
+-Djdk.instrument.traceUsage=false
+-Djdk.attach.allowAttachSelf=true
+
+# 内存设置
+-Xms512m
+-Xmx2048m
+
+# 垃圾回收设置
+-XX:+UseG1GC
+-XX:+UseStringDeduplication
+
+# 其他设置
+-Djava.awt.headless=true
+-Dsun.java2d.noddraw=true
+

@@ -1,0 +1,116 @@
+spring:
+  application:
+    name: ai-agent
+  config:
+    import: application-local.yml
+  ai:
+    dashscope: # 用的模型
+   ##   api-key: sk-0ef222e3c3d14e8d895aec2f2a16b4aa
+      chat:  # 模型参数
+        options:
+          model: qwen-plus
+    #    ollama:
+#      base-url: http://localhost:11434
+#      chat:
+#        model:
+#          gemma3:1b
+    vectorstore:  # pgsql向量数据库
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 1536   #text-embedding-v1 默认用的嵌入v1接口
+        max-document-batch-size: 10000 # Optional: Maximum number of documents per batch
+    mcp:
+      client:
+        stdio:
+          servers-configuration: classpath:mcp-servers.json
+        sse:
+          connections:
+#            server1:
+#              url: http://localhost:8093
+#              sse-endpoint: /sse
+#              message-endpoint: /mcp/message
+#              headers:
+#                Authorization: "Bearer your-token-value"
+#                X-Custom-Header: "abc123"
+#            tendency-software:
+#              url: https://dashscope.aliyuncs.com
+#              sseEndpoint: /api/v1/mcps/tendency-software/sse
+#              headers:
+#                Authorization: Bearer sk-0ef222e3c3d14e8d895aec2f2a16b4aa
+#            aivalue:
+#              url: https://dashscope.aliyuncs.com
+#              sseEndpoint: /api/v1/mcps/aivalue/sse
+#              headers:
+#                Authorization: Bearer sk-0ef222e3c3d14e8d895aec2f2a16b4aa
+        request-timeout: 60000
+  datasource:
+#    url: jdbc:postgresql://pgm-wz9uh0qa84a221j3qo.rwlb.rds.aliyuncs.com:5432/kxh_ai_agent
+#    username: kxh
+#    password: Kang123456!
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.1.5:3306/finance?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456
+  # application.properties
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6389
+
+  autoconfigure:
+    exclude=org:
+      springframework:
+        boot:
+          autoconfigure:
+            data:
+              redis:
+                RedisAutoConfiguration:server:
+server:
+  port: 8092
+  servlet:
+    context-path: /api
+
+
+# springdoc-openapi 自动生成api接口 扫描controller
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.kxh.aiagent.controller
+# knife4j 集成swagger 接口生成
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+chat-system-type: 0
+
+logging:
+  level:
+    org.springframework.ai.mcp: DEBUG
+    org.springframework.ai.mcp.client: DEBUG
+    io.modelcontextprotocol: DEBUG
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.kxh.aiagent.entity
+  configuration:
+    map-underscore-to-camel-case: false
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: false
+
+
+

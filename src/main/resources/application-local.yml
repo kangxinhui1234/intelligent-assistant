@@ -1,0 +1,13 @@
+spring:
+  ai:
+    dashscope:
+      api-key: sk-0ef222e3c3d14e8d895aec2f2a16b4aa
+    mcp:
+      client:
+        sse:
+          connections:
+            aivalue:
+              url: https://dashscope.aliyuncs.com
+              sseEndpoint: /api/v1/mcps/aivalue/sse
+              headers:
+                Authorization: Bearer sk-0ef222e3c3d14e8d895aec2f2a16b4aa

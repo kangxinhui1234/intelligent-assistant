@@ -1,0 +1,19 @@
+# 使用 spring-ai-starter-mcp-server
+spring:
+  ai:
+    mcp:
+      server:
+        name: stdio-mcp-server
+        version: 1.0.0
+        stdio: true
+        type: SYNC # 同步
+        timeout: 30000 # 30秒超时
+        startup-timeout: 60000 # 60秒启动超时
+  main:
+    web-application-type: none
+    banner-mode: off
+  output:
+    ansi:
+      enabled: never # 禁用ANSI颜色输出，避免乱码
+
+

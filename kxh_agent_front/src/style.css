@@ -1,0 +1,205 @@
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; margin: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif; }
+
+.container { max-width: 1000px; margin: 0 auto; padding: 16px; }
+.card { background: rgba(255,255,255,0.06); border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; padding: 16px; }
+.btn { padding: 10px 14px; border-radius: 8px; border: 1px solid #3b82f6; background: #3b82f6; color: #fff; cursor: pointer; }
+.btn.outline { background: transparent; color: #3b82f6; }
+.row { display: flex; gap: 12px; align-items: center; }
+.col { display: flex; flex-direction: column; gap: 12px; }
+
+.chat { height: calc(100vh - 170px); overflow: auto; display: flex; flex-direction: column; gap: 12px; padding: 8px; }
+.chat-item { display: flex; gap: 10px; }
+.chat-item.left { justify-content: flex-start; }
+.chat-item.right { justify-content: flex-end; }
+.bubble { max-width: 70%; padding: 10px 12px; border-radius: 12px; white-space: pre-wrap; word-break: break-word; }
+.bubble.left { background: #f3f4f6; color: #111827; border-top-left-radius: 4px; }
+.bubble.right { background: #2563eb; color: #fff; border-top-right-radius: 4px; }
+
+/* Markdown内容在聊天气泡中的特殊样式 */
+.bubble.left .markdown-content {
+  color: #111827;
+  line-height: 1.6;
+}
+
+.bubble.left .markdown-content :deep(code) {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.bubble.left .markdown-content :deep(pre) {
+  background-color: #e5e7eb;
+  border: 1px solid #d1d5db;
+}
+
+.bubble.left .markdown-content :deep(blockquote) {
+  background-color: #f9fafb;
+  border-left-color: #d1d5db;
+  color: #4b5563;
+}
+
+.bubble.left .markdown-content :deep(table th) {
+  background-color: #f3f4f6;
+}
+
+.bubble.left .markdown-content :deep(table th),
+.bubble.left .markdown-content :deep(table td) {
+  border-color: #d1d5db;
+}
+
+/* 优化整体文字行距和间距 */
+.bubble {
+  line-height: 1.5;
+  padding: 12px 16px;
+}
+
+.bubble.left {
+  background: #f8fafc;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+}
+
+.bubble.right {
+  background: #3b82f6;
+  color: #ffffff;
+  border: 1px solid #2563eb;
+}
+
+/* 优化聊天容器间距 */
+.chat {
+  gap: 16px;
+  padding: 12px;
+}
+
+.chat-item {
+  margin-bottom: 8px;
+}
+
+/* 优化步骤消息的间距 */
+.step-message {
+  width: 100%;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.step-number {
+  background: #3b82f6;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.step-title {
+  flex: 1;
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.step-status {
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.step-content {
+  margin-top: 12px;
+  line-height: 1.6;
+}
+
+.regular-message {
+  width: 100%;
+  line-height: 1.6;
+}
+
+/* 步骤状态图标样式 */
+.step-status.completed {
+  color: #10b981;
+}
+
+.step-status.error {
+  color: #ef4444;
+}
+
+.step-status.loading {
+  color: #f59e0b;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* 加载指示器 */
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin: 8px 0;
+  border: 1px solid #e2e8f0;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  background: #3b82f6;
+  border-radius: 50%;
+  animation: loading-bounce 1.4s ease-in-out infinite both;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+.loading-text {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+@keyframes loading-bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+.input-area { display: flex; gap: 8px; align-items: center; }
+.input { flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid #d1d5db; }
+.subtext { color: #6b7280; font-size: 12px; }
+
+
+
+
+
+

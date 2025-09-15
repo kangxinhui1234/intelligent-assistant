@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: kch_search_image_mcp_server
+  profiles:
+    active: sse
+server:
+  port: 8093
+
