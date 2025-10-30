@@ -50,6 +50,7 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -89,9 +90,11 @@ public class LoveApp {
    @Autowired
     RedisBasedChatMemory redisBasedChatMemory;
 
-   @Autowired
+   @Qualifier("loveAppRagCloudAdvisor")
     Advisor loveAppRagCloudAdvisor;
-    @Autowired
+
+
+    @Qualifier("pgSqlRetriverAdvisor")
     Advisor pgSqlRetriverAdvisor; // pgSql检索器
 
 

@@ -6,8 +6,11 @@ import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
+import org.springframework.ai.rag.preretrieval.query.expansion.MultiQueryExpander;
+import org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer;
 import org.springframework.ai.rag.preretrieval.query.transformation.RewriteQueryTransformer;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
@@ -17,6 +20,8 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 //@Configuration
 public class RetriverAdvisorConfiguration {
@@ -32,14 +37,20 @@ public class RetriverAdvisorConfiguration {
     @Bean("pgSqlRetriverAdvisor")
     public Advisor pgSqlRetriverAdvisor(){
         ChatClient.Builder chatClientBuilder = ChatClient.builder(dashscopeChatModel)  ;
-        // 3. 配置查询重写转换器
+         CompressionQueryTransformer compressionQueryTransformer =  CompressionQueryTransformer.builder()
+                 .chatClientBuilder(chatClientBuilder.build().mutate()).build();
+
+
+
+
+        // 3. 配置查询重写转换器  在rag检索前可以把用户问题重写，依赖AI模型RewriteQueryTransform
         RewriteQueryTransformer queryTransformer = RewriteQueryTransformer.builder()
                 .chatClientBuilder(
                         chatClientBuilder.build().mutate()
                 )
                 .build();
 
-        // 4. 配置查询增强器（允许空上下文）
+        // 4. 配置查询增强器（允许空上下文） ContextualQueryAugmenter
         ContextualQueryAugmenter queryAugmenter = ContextualQueryAugmenter.builder()
                 .allowEmptyContext(true) // 允许知识库为空
                .emptyContextPromptTemplate(new PromptTemplate("抱歉我只能回答理财相关问题，如果有疑问，可以联系客服电话632584")) // 自定义空模板返回消息
@@ -51,9 +62,32 @@ public class RetriverAdvisorConfiguration {
                 .topK(5)
               //  .filterExpression(new FilterExpressionBuilder().eq("")) 元数据筛选表达式
                 .build();
+
+        /**
+         * 可以重写retriever 的retrive方法  加入多查询扩展器
+         */
+        MultiQueryExpander queryExpander = MultiQueryExpander.builder()
+                .chatClientBuilder(chatClientBuilder)
+                .numberOfQueries(3)
+                .build();
+        List<Query> queries = queryExpander.expand(new Query("啥是程序员鱼皮？他会啥？"));
+
+
+        // 2. 创建多查询检索器（核心修改点）
+//        MultiQueryRetriever multiQueryRetriever = MultiQueryRetriever.builder()
+//                .retriever(baseRetriever) // 包装基础检索器
+//                .chatClient(chatClientBuilder.build().mutate()) // 使用相同的ChatClient
+//                .numberOfQueries(3) // 生成3个扩展查询
+//                .build();
+
+
         return RetrievalAugmentationAdvisor.builder()
                 .queryTransformers(queryTransformer) // 重写查询转换器
                 .documentRetriever(retriever)
+                .queryExpander(queryExpander) // 多查询扩展
+                .documentPostProcessors((Query query, List<Document> documents) ->{
+                     return documents;
+                })
                 .queryAugmenter(queryAugmenter) // 允许知识库中为空 并且可以自定义空模板返回
                 .build();
     }

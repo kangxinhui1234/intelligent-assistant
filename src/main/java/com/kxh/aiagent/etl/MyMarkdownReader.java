@@ -60,9 +60,14 @@ public class MyMarkdownReader {
      */
     public List<Document> transformDocument(List<Document> documents){
         TextSplitter textSplitter = new TokenTextSplitter(true);
+//        TextSplitter textSplitter = new TokenTextSplitter.Builder()
+//                .setDefaultChunkSize(800)      // 设置目标块大小
+//                .setChunkOverlap(50)           // 关键：设置重叠Token数，例如50
+//                .setKeepSeparator(true)        // 保留分隔符
+//                // 根据需求设置其他参数，如 .setMinChunkSizeChars(350)
+//                .build();
         return textSplitter.apply(documents);
     }
-
 
     /**
      * 文档转换 元数据增强 为文档生成新的元数据 摘要等信息 通过向ai发送文本生成新的关键词信息，成本较高

@@ -6,6 +6,9 @@ spring:
   ai:
     dashscope: # 用的模型
    ##   api-key: sk-0ef222e3c3d14e8d895aec2f2a16b4aa
+      embedding:
+        options:
+          model: text-embedding-v2
       chat:  # 模型参数
         options:
           model: qwen-plus
@@ -25,7 +28,7 @@ spring:
         stdio:
           servers-configuration: classpath:mcp-servers.json
         sse:
-          connections:
+  #        connections:
 #            server1:
 #              url: http://localhost:8093
 #              sse-endpoint: /sse
@@ -112,5 +115,14 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: false
 
-
+management:
+  endpoint:
+    health:
+      # 显示健康检查的详细信息
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        # 暴露的端点，包含health。使用"*"可暴露所有端点（生产环境慎用）
+        include: health
 
