@@ -7,6 +7,7 @@ import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /**
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class InvestManus extends ToolCallAgent{
 
-    public InvestManus(ToolCallback[] toolCallbacks, ChatModel dashscopeChatModel,Advisor loveAppRagCloudAdvisor) {
+    public InvestManus(@Qualifier("toolCallbacks2") ToolCallback[] toolCallbacks, ChatModel dashscopeChatModel, Advisor loveAppRagCloudAdvisor) {
         super(toolCallbacks);
         this.setState(AgentState.IDLE);
         setChatClient(ChatClient.builder(dashscopeChatModel)

@@ -10,6 +10,7 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -25,6 +26,7 @@ public class ToolCallBackConfiguration {
     @Autowired(required = false)
     ValuationQuery valuationQuery;
     @Bean
+    @Primary
     public ToolCallback[] toolCallbacks2(){
 /**
  * 1.0.0之后不必再包装

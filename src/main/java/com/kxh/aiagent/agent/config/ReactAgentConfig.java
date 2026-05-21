@@ -37,7 +37,7 @@ public class ReactAgentConfig {
                         """)
                 .hooks(
                         ModelCallLimitHook.builder().runLimit(15).build(),
-                        ToolCallLimitHook.builder().build()
+                        ToolCallLimitHook.builder().runLimit(10).build()
                 )
                 .interceptors(
                         ModelRetryInterceptor.builder().maxAttempts(3).build(),
@@ -75,7 +75,7 @@ public class ReactAgentConfig {
                         """)
                 .hooks(
                         ModelCallLimitHook.builder().runLimit(20).build(),
-                        ToolCallLimitHook.builder().build()
+                        ToolCallLimitHook.builder().runLimit(10).build()
                 )
                 .interceptors(
                         ModelRetryInterceptor.builder().maxAttempts(3).build(),
