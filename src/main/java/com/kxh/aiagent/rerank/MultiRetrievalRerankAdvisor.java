@@ -74,40 +74,52 @@ public class MultiRetrievalRerankAdvisor implements BaseAdvisor {
         this.searchRequest = searchRequest;
     }
 
+    public MultiRetrievalRerankAdvisor(
+            VectorStore vectorStore,
+            RerankModel rerankModel,
+            SearchRequest searchRequest
+    ) {
+        this(vectorStore, null, rerankModel, searchRequest);
+    }
+
     public ChatClientRequest before(ChatClientRequest request, AdvisorChain advisorChain) {
         Map<String, Object> context = request.context();
         UserMessage userMessage = request.prompt().getUserMessage();
         String query = userMessage.getText();
 
-        // 1. 并行执行两种检索
+        // 1. 稠密检索
         List<Document> denseDocs = vectorStore.similaritySearch(
                 SearchRequest.from(searchRequest)
                         .query(query)
-                       // .filterExpression("app=love")
-                        .topK(5)
+                        .topK(10)
                         .build()
         );
+        context.put("dense_retrieved_documents", denseDocs);
 
-        List<Document> sparseDocs = null;
-        try {
-            sparseDocs = sparseRetriever.retrieve(query, searchRequest.getTopK());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        List<Document> docsForRerank;
+
+        // 2. 稀疏检索 + RRF 融合（可选）
+        if (sparseRetriever != null) {
+            List<Document> sparseDocs;
+            try {
+                sparseDocs = sparseRetriever.retrieve(query, searchRequest.getTopK());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            context.put("sparse_retrieved_documents", sparseDocs);
+
+            List<Document> fusedDocs = fuseResults(denseDocs, sparseDocs);
+            context.put("fused_documents", fusedDocs);
+            docsForRerank = fusedDocs;
+        } else {
+            docsForRerank = denseDocs;
         }
 
-        // 2. 结果融合 (RRF算法)
-        List<Document> fusedDocs = fuseResults(denseDocs, sparseDocs);
-
-        // 3. 保存原始结果用于调试
-        context.put("dense_retrieved_documents", denseDocs);
-        context.put("sparse_retrieved_documents", sparseDocs);
-        context.put("fused_documents", fusedDocs);
-
-        // 4. 重排序
-        List<Document> rerankedDocs = doRerank(request, fusedDocs);
+        // 3. 重排序
+        List<Document> rerankedDocs = doRerank(request, docsForRerank);
         context.put("qa_retrieved_documents", rerankedDocs);
 
-        // 5. 构建上下文
+        // 4. 构建上下文
         String documentContext = rerankedDocs.stream()
                 .map(Document::getText)
                 .collect(Collectors.joining(System.lineSeparator()));

@@ -10,11 +10,13 @@ import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.RestClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /**
  * es客户端
  */
 @Configuration
+@Profile("elasticsearch")
 public class ElasticsearchConfig {
 
     @Bean

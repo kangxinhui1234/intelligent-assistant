@@ -1,0 +1,11 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.vectorstore.milvus.autoconfigure.MilvusVectorStoreAutoConfiguration
+  ai:
+    vectorstore:
+      elasticsearch:
+        index-name: my-pdf-index
+        dimensions: 1536
+        similarity: cosine
+        initialize-schema: true

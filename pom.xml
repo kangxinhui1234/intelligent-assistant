@@ -29,12 +29,11 @@
     <properties>
         <java.version>21</java.version>
 
-        <spring-ai.version>1.0.0</spring-ai.version>
+        <spring-ai.version>1.1.2</spring-ai.version>
         <!-- Spring Boot -->
         <spring-boot.version>3.3.4</spring-boot.version>
         <!-- Spring AI Alibaba -->
-        <!-- Install Spring AI Alibaba in your local. -->
-        <spring-ai-alibaba.version>1.0.0.3</spring-ai-alibaba.version>
+        <spring-ai-alibaba.version>1.1.2.1</spring-ai-alibaba.version>
     </properties>
 
     <dependencyManagement>
@@ -117,6 +116,7 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
         </dependency>
 
         <!--Langchain4j 大模型对接灵积-->
@@ -174,14 +174,12 @@
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-advisors-vector-store</artifactId>
-            <version>1.0.0</version>
         </dependency>
 
 <!--Spring AI提供的markdown 解析工具-->
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-markdown-document-reader</artifactId>
-            <version>1.0.0</version>
         </dependency>
 
 
@@ -206,7 +204,6 @@
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-pgvector-store</artifactId>
-            <version>1.0.0</version>
         </dependency>
 
 
@@ -245,7 +242,6 @@
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
-            <version>1.0.0</version>
         </dependency>
 
 
@@ -279,7 +275,6 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-graph-core</artifactId>
-            <version>1.0.0.2</version>
         </dependency>
      <!--   <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -297,25 +292,30 @@
         <dependency>
             <groupId>co.elastic.clients</groupId>
             <artifactId>elasticsearch-java</artifactId>
-            <version>8.12.0</version>
+            <version>8.14.0</version>
         </dependency>
 
-
-        <!--es 向量数据库集成yoh                                                                                                                                                                                                                                                                                                                                                                                                                                       oo]-->
+        <!--es 向量数据库集成-->
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-vector-store-elasticsearch</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>co.elastic.clients</groupId>
-            <artifactId>elasticsearch-java</artifactId>
-            <version>8.14.0</version> <!-- 你可以根据Spring AI版本调整 -->
-        </dependency>
-
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!--Milvus 向量数据库集成-->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-vector-store-milvus</artifactId>
+        </dependency>
+
+        <!--Spring AI Alibaba Agent Framework (多Agent编排 + ReactAgent)-->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
         </dependency>
 
     </dependencies>

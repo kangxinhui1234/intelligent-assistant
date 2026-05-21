@@ -6,6 +6,7 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.print.Doc;
@@ -14,8 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-// 基于Elasticsearch的稀疏检索实现
 @Component
+@Profile("elasticsearch")
 public class ElasticsearchSparseRetriever implements SparseRetriever {
 
     private final ElasticsearchClient esClient;

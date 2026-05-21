@@ -1,8 +1,10 @@
 spring:
+  profiles:
+    active: milvus
   application:
     name: ai-agent
   config:
-    import: application-local.yml
+    import: optional:application-local.yml
   ai:
     dashscope: # 用的模型
    ##   api-key: sk-0ef222e3c3d14e8d895aec2f2a16b4aa
@@ -21,8 +23,15 @@ spring:
       pgvector:
         index-type: HNSW
         distance-type: COSINE_DISTANCE
-        dimensions: 1536   #text-embedding-v1 默认用的嵌入v1接口
-        max-document-batch-size: 10000 # Optional: Maximum number of documents per batch
+        dimensions: 1536
+        max-document-batch-size: 10000
+      milvus:
+        client:
+          host: localhost
+          port: 19530
+        database-name: default
+        collection-name: pdf_docs
+        embedding-dimension: 1536
     mcp:
       client:
         stdio:
@@ -51,10 +60,10 @@ spring:
 #    url: jdbc:postgresql://pgm-wz9uh0qa84a221j3qo.rwlb.rds.aliyuncs.com:5432/kxh_ai_agent
 #    username: kxh
 #    password: Kang123456!
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://192.168.1.5:3306/finance?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
-    username: root
-    password: 123456
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#    url: jdbc:mysql://192.168.1.5:3306/finance?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+#    username: root
+#    password: 123456
   # application.properties
   servlet:
     multipart:

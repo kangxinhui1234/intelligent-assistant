@@ -14,6 +14,7 @@ import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Component;
 import java.io.File;
@@ -25,12 +26,13 @@ import java.util.Vector;
 
 @Component
 @Slf4j
+@Profile("elasticsearch")
 public class KnowledgeImporter {
 
     @Autowired
     private  ElasticsearchClient esClient;
-    @Resource
-    VectorStore elasticSearchVectorStore;
+    @Resource(name = "vectorStore")
+    VectorStore vectorStore;
 
     public KnowledgeImporter() {
     }
@@ -40,7 +42,7 @@ public class KnowledgeImporter {
         List<Document> documents =  getDocsFromPdf();
          for(int i = 0;i<documents.size();i+=10){
              List<Document> chunk = documents.subList(i,Math.min(i + 10, documents.size()));
-             elasticSearchVectorStore.add(chunk);
+             vectorStore.add(chunk);
          }
 
 

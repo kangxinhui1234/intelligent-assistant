@@ -20,9 +20,9 @@ import java.util.stream.Collectors;
 public class ToolCallBackConfiguration {
     @Autowired
     ToolCallbackProvider toolCallbackProvider;
-    @Autowired
+    @Autowired(required = false)
     financeIndexQuery financeIndexQuery;
-    @Autowired
+    @Autowired(required = false)
     ValuationQuery valuationQuery;
     @Bean
     public ToolCallback[] toolCallbacks2(){

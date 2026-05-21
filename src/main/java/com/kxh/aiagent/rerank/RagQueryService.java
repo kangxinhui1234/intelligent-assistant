@@ -18,6 +18,7 @@ import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -25,10 +26,11 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-public class RagQueryService {
+@Profile("elasticsearch")
+public class RagQueryService implements RagService {
 
-    @Resource
-    VectorStore elasticSearchVectorStore;
+    @Resource(name = "vectorStore")
+    VectorStore vectorStore;
 
     @Resource
     ElasticsearchSparseRetriever elasticsearchSparseRetriever;
@@ -48,7 +50,7 @@ public class RagQueryService {
         SearchRequest searchRequest =  SearchRequest.builder().topK(5).similarityThreshold(0.3).build();
         ChatClient chatClient = ChatClient.builder(dashscopeChatModel).defaultAdvisors(
                 //  new RetrievalRerankAdvisor(vectorStore, dashScopeRerankModel) // 重排模型
-                new MultiRetrievalRerankAdvisor(elasticSearchVectorStore,elasticsearchSparseRetriever,dashScopeRerankModel, searchRequest)
+                new MultiRetrievalRerankAdvisor(vectorStore,elasticsearchSparseRetriever,dashScopeRerankModel, searchRequest)
 
         ).build();
         ChatResponse chatResponse =  chatClient.prompt().user(message).call().chatResponse();

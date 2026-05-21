@@ -1,26 +1,15 @@
 package com.kxh.aiagent.app;
 
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
-import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetriever;
-import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetrieverOptions;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.OverAllStateFactory;
-import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.node.QuestionClassifierNode;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.kxh.aiagent.advisor.MyCustomAdvisor;
 import com.kxh.aiagent.advisor.Re2ReadAdvisor;
 import com.kxh.aiagent.chatmemory.FileBasedChatMemory;
 import com.kxh.aiagent.chatmemory.RedisBasedChatMemory;
 import com.kxh.aiagent.enums.SYSTEM_PROMPT_TYPE;
-import com.kxh.aiagent.graph.RecordingNode;
-import com.kxh.aiagent.tools.CustomerTools;
 import com.kxh.aiagent.tools.manager.CompatibleToolCallback;
 import com.kxh.aiagent.vectorstore.MySimpleVectorStore;
-import com.volcengine.ark.runtime.model.completion.chat.ChatMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -60,10 +49,6 @@ import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 @Component
 @Slf4j
 public class LoveApp {
@@ -190,7 +175,7 @@ public class LoveApp {
 //                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10)) //关联历史会话的条数
                 .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, chatId))
 
-                .advisors(new QuestionAnswerAdvisor(simpleVectorStore))
+                .advisors(QuestionAnswerAdvisor.builder(simpleVectorStore).build())
                 .advisors(spec -> spec.param(QuestionAnswerAdvisor.FILTER_EXPRESSION,"type =='web'"))
                 .call()
                 .chatResponse();
@@ -316,51 +301,7 @@ public class LoveApp {
      */
 
     public String doChatWithGraph(String msg) throws GraphStateException {
-        OverAllStateFactory stateFactory = () -> {
-            OverAllState state = new OverAllState();
-            state.registerKeyAndStrategy("input", new ReplaceStrategy());
-            state.registerKeyAndStrategy("classifier_output", new ReplaceStrategy());
-            state.registerKeyAndStrategy("solution", new ReplaceStrategy());
-            return state;
-        };
-
-
-        // Feedback positive/negative classification node
-        QuestionClassifierNode feedbackClassifier = QuestionClassifierNode.builder()
-                .chatClient(chatClient)
-                .inputTextKey("input")
-                .categories(List.of("positive feedback", "negative feedback"))
-                .classificationInstructions(
-                        List.of("Try to understand the user's feeling when he/she is giving the feedback."))
-                .build();
-// Negative feedback specific question classification node
-        QuestionClassifierNode specificQuestionClassifier = QuestionClassifierNode.builder()
-                .chatClient(chatClient)
-                .inputTextKey("input")
-                .categories(List.of("after-sale service", "transportation", "product quality", "others"))
-                .classificationInstructions(List.of(
-                        "What kind of service or help the customer is trying to get from us? " +
-                                "Classify the question based on your understanding."))
-                .build();
-
-
-        // Node for recording results
-        RecordingNode recorderNode = new RecordingNode();
-
-//        StateGraph graph = new StateGraph("Consumer Service Workflow Demo", stateFactory)
-//                .addNode("feedback_classifier", node_async(feedbackClassifier))
-//                .addNode("specific_question_classifier", node_async(specificQuestionClassifier))
-//                .addNode("recorder", node_async(recorderNode))
-//                // Define edges (workflow sequence)
-//                .addEdge(START, "feedback_classifier")  // Start node
-//                .addConditionalEdges("feedback_classifier",
-//                        edge_async(new CustomerServiceController.FeedbackQuestionDispatcher()),
-//                        Map.of("positive", "recorder", "negative", "specific_question_classifier"))
-//                .addConditionalEdges("specific_question_classifier",
-//                        edge_async(new CustomerServiceController.SpecificQuestionDispatcher()),
-//                        Map.of("after-sale", "recorder", "transportation", "recorder",
-//                                "quality", "recorder", "others", "recorder"))
-//                .addEdge("recorder", END);  // End node
+        // TODO: 迁移到新版 Graph API (OverAllStateFactory/QuestionClassifierNode 已在 1.1.2 中移除)
         return "";
     }
 

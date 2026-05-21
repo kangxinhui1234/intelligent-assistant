@@ -8,6 +8,7 @@ import com.kxh.aiagent.mapper.FinanceMapper;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import java.util.Map;
  * 财务指标插叙
  */
 @Component
+@ConditionalOnProperty(name = "spring.datasource.url")
 public class financeIndexQuery {
     @Autowired
     FinanceMapper financeMapper;
