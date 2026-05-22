@@ -1,0 +1,450 @@
+{
+  "meta": {
+    "data_collection_time": "2026-05-22",
+    "stock_code": "601318",
+    "stock_name": "中国平安",
+    "data_sources": ["readStockInfo", "readFinanceData", "readValuationData", "readIndustryPeers", "searchWebByKeyword"],
+    "data_status": {
+      "stock_info": "complete",
+      "finance_data": "complete",
+      "valuation_data": "partial (横向对比缺失，已通过搜索补充)",
+      "industry_peers": "partial (API连接失败，已通过搜索补充行业信息)",
+      "cash_flow": "API返回空字段，仅有key_indicators中含经营现金流数据"
+    }
+  },
+
+  "1_公司基本信息": {
+    "stock_code": "601318",
+    "stock_code_full": "601318.SH",
+    "hk_code": "2318.HK",
+    "company_name_cn": "中国平安保险(集团)股份有限公司",
+    "company_name_en": "Ping An Insurance (Group) Company Of China, Ltd.",
+    "legal_representative": "马明哲",
+    "chairman": "马明哲",
+    "general_manager": "谢永林",
+    "secretary": "盛瑞生",
+    "established_date": "1988-05-27",
+    "listed_date": "2007-03-01",
+    "industry_code": "BK0056",
+    "industry_name": "保险",
+    "sector_classification": "非银金融",
+    "main_business": "提供多元化的金融产品及服务，包括寿险及健康险业务、财产保险业务、银行业务、资产管理业务、金融赋能业务",
+    "registered_capital": "18,107,641,995元",
+    "employees": "258,806",
+    "reg_address": "广东省深圳市福田区益田路5033号平安金融中心47、48、109、110、111、112层",
+    "office_address": "广东省深圳市福田区益田路5033号平安金融中心47、48、108、109、110、111、112层",
+    "website": "www.pingan.cn",
+    "contact": {
+      "telephone": "86-4008866338",
+      "email": "ir@pingan.com.cn; pr@pingan.com.cn",
+      "fax": "86-755-82431029"
+    },
+    "ipo_info": {
+      "issue_price": "33.80元",
+      "issue_volume": "1,150,000,000股",
+      "issue_pe": "76.18",
+      "online_success_rate": "2.3041%",
+      "net_raised": "38,221,924,360元"
+    },
+    "fortune_global_500_rank": "2025年第47位"
+  },
+
+  "2_财务数据(利润表_最近5年)": {
+    "unit": "人民币元",
+    "years": [2021, 2022, 2023, 2024, 2025],
+    "annual_data": [
+      {
+        "year": 2021,
+        "report_type": "年报",
+        "operating_income": 1180444000000,
+        "invest_income": 103378000000,
+        "operating_tax_add": 4570000000,
+        "interest_expense": 28082000000,
+        "operating_profit": 139685000000,
+        "total_profit": 139580000000,
+        "income_tax": 17778000000,
+        "minority_interest": 20184000000,
+        "basic_eps": 5.77,
+        "diluted_eps": 5.72
+      },
+      {
+        "year": 2022,
+        "report_type": "年报",
+        "operating_income": 880355000000,
+        "invest_income": 38612000000,
+        "operating_tax_add": 3414000000,
+        "interest_expense": 22698000000,
+        "operating_profit": 142839000000,
+        "total_profit": 142335000000,
+        "income_tax": 7518000000,
+        "minority_interest": 23809000000,
+        "basic_eps": 6.36,
+        "diluted_eps": 6.27
+      },
+      {
+        "year": 2023,
+        "report_type": "年报",
+        "operating_income": 913789000000,
+        "invest_income": 36891000000,
+        "operating_tax_add": 3665000000,
+        "interest_expense": 24346000000,
+        "operating_profit": 120853000000,
+        "total_profit": 120117000000,
+        "income_tax": 10843000000,
+        "minority_interest": 23609000000,
+        "basic_eps": 4.84,
+        "diluted_eps": 4.74
+      },
+      {
+        "year": 2024,
+        "report_type": "年报",
+        "operating_income": 1028925000000,
+        "invest_income": 83613000000,
+        "operating_tax_add": 3579000000,
+        "interest_expense": 19405000000,
+        "operating_profit": 171649000000,
+        "total_profit": 170495000000,
+        "income_tax": 23762000000,
+        "minority_interest": 20126000000,
+        "basic_eps": 7.16,
+        "diluted_eps": 6.99
+      },
+      {
+        "year": 2025,
+        "report_type": "年报",
+        "operating_income": 1050506000000,
+        "invest_income": 152863000000,
+        "operating_tax_add": 3764000000,
+        "interest_expense": 21609000000,
+        "operating_profit": 187696000000,
+        "total_profit": 185590000000,
+        "income_tax": 27289000000,
+        "minority_interest": 23523000000,
+        "basic_eps": 7.68,
+        "diluted_eps": 7.44
+      }
+    ]
+  },
+
+  "3_财务数据(资产负债表_最近5年)": {
+    "unit": "人民币元",
+    "annual_data": [
+      {
+        "year": 2021,
+        "goodwill": 23175000000,
+        "minority_equity": 265318000000,
+        "monetary_funds": 535067000000,
+        "total_assets": 10142026000000,
+        "total_equity": 1077723000000,
+        "total_liabilities": 9064303000000,
+        "asset_liability_ratio": "89.37%"
+      },
+      {
+        "year": 2022,
+        "goodwill": 44060000000,
+        "minority_equity": 316805000000,
+        "monetary_funds": 613737000000,
+        "total_assets": 11009940000000,
+        "total_equity": 1185996000000,
+        "total_liabilities": 9823944000000,
+        "asset_liability_ratio": "89.45%"
+      },
+      {
+        "year": 2023,
+        "goodwill": 44116000000,
+        "minority_equity": 329953000000,
+        "monetary_funds": 577212000000,
+        "total_assets": 11583417000000,
+        "total_equity": 1228964000000,
+        "total_liabilities": 10354453000000,
+        "asset_liability_ratio": "89.39%"
+      },
+      {
+        "year": 2024,
+        "goodwill": 43539000000,
+        "minority_equity": 376112000000,
+        "monetary_funds": 683433000000,
+        "total_assets": 12957827000000,
+        "total_equity": 1304712000000,
+        "total_liabilities": 11653115000000,
+        "asset_liability_ratio": "89.93%"
+      },
+      {
+        "year": 2025,
+        "goodwill": 38130000000,
+        "minority_equity": 415569000000,
+        "monetary_funds": 745679000000,
+        "total_assets": 13898471000000,
+        "total_equity": 1415988000000,
+        "total_liabilities": 12482483000000,
+        "asset_liability_ratio": "89.81%"
+      }
+    ]
+  },
+
+  "4_核心财务指标(最近5年)": {
+    "note": "数据来自key_indicators，结合利润表可推导归母净利润",
+    "annual_data": [
+      {
+        "year": 2021,
+        "basic_eps_adjusted": 5.77,
+        "eps_adjusted_deducted": 5.78,
+        "roe": "12.51%",
+        "roe_weighted": "13.00%",
+        "net_profit_growth": "-23.57%",
+        "equity_growth": "9.09%",
+        "total_asset_growth": "6.45%",
+        "bvps_adjusted": 44.44,
+        "bvps_raw": 58.96,
+        "operating_cf_per_share": 4.93,
+        "net_profit_deducted": 101731000000,
+        "asset_liability_ratio": "89.37%",
+        "total_assets": 10142026000000,
+        "long_term_stock_investment": 284061000000,
+        "long_term_bond_investment": 2768995000000
+      },
+      {
+        "year": 2022,
+        "basic_eps_adjusted": 4.80,
+        "eps_adjusted_deducted": 4.82,
+        "roe": "9.76%",
+        "roe_weighted": "10.10%",
+        "net_profit_growth": "-11.80%",
+        "equity_growth": "9.05%",
+        "total_asset_growth": "9.81%",
+        "bvps_adjusted": 46.97,
+        "bvps_raw": 64.29,
+        "operating_cf_per_share": 26.58,
+        "net_profit_deducted": 84163000000,
+        "asset_liability_ratio": "89.45%",
+        "total_assets": 11137168000000,
+        "long_term_stock_investment": 280793000000,
+        "long_term_bond_investment": 3004502000000
+      },
+      {
+        "year": 2023,
+        "basic_eps_adjusted": 4.84,
+        "eps_adjusted_deducted": 4.87,
+        "roe": "9.53%",
+        "roe_weighted": "9.70%",
+        "net_profit_growth": "+1.71%",
+        "equity_growth": "4.57%",
+        "total_asset_growth": "4.01%",
+        "bvps_adjusted": 49.37,
+        "bvps_raw": 67.49,
+        "operating_cf_per_share": 19.79,
+        "net_profit_deducted": 86240000000,
+        "asset_liability_ratio": "89.39%",
+        "total_assets": 11583417000000,
+        "long_term_stock_investment": 258877000000,
+        "long_term_bond_investment": 1243353000000
+      },
+      {
+        "year": 2024,
+        "basic_eps_adjusted": 7.16,
+        "eps_adjusted_deducted": 6.63,
+        "roe": "13.63%",
+        "roe_weighted": "13.80%",
+        "net_profit_growth": "+34.28%",
+        "equity_growth": "6.16%",
+        "total_asset_growth": "11.87%",
+        "bvps_adjusted": 50.99,
+        "bvps_raw": 71.65,
+        "operating_cf_per_share": 21.00,
+        "net_profit_deducted": 117392000000,
+        "asset_liability_ratio": "89.93%",
+        "total_assets": 12957827000000,
+        "long_term_stock_investment": 185514000000,
+        "long_term_bond_investment": 1232450000000
+      },
+      {
+        "year": 2025,
+        "basic_eps_adjusted": 7.68,
+        "eps_adjusted_deducted": 8.19,
+        "roe": "13.47%",
+        "roe_weighted": "14.00%",
+        "net_profit_growth": "+7.88%",
+        "equity_growth": "8.53%",
+        "total_asset_growth": "7.26%",
+        "bvps_adjusted": 55.25,
+        "bvps_raw": 78.20,
+        "operating_cf_per_share": 36.37,
+        "net_profit_deducted": 143773000000,
+        "asset_liability_ratio": "89.81%",
+        "total_assets": 13898471000000,
+        "long_term_stock_investment": 141251000000,
+        "long_term_bond_investment": 1270569000000
+      }
+    ],
+    "summary_trend": {
+      "roe_trend": "12.51%→9.76%→9.53%→13.63%→13.47% (先降后升，2024触底大幅反弹)",
+      "eps_trend": "5.77→4.80→4.84→7.16→7.68 (2024年起强劲回升)",
+      "net_profit_growth_trend": "-23.57%→-11.80%→+1.71%→+34.28%→+7.88% (2023扭正，2024爆发)",
+      "bvps_adjusted_trend": "44.44→46.97→49.37→50.99→55.25 (持续增长)",
+      "total_assets_trend": "10.14万亿→11.01万亿→11.58万亿→12.96万亿→13.90万亿 (稳步扩张)",
+      "operating_cf_per_share_trend": "4.93→26.58→19.79→21.00→36.37 (现金流大幅改善)"
+    }
+  },
+
+  "5_估值数据": {
+    "note": "API估值横向对比字段缺失，以下数据来自indicator_valuation接口及公开搜索补充",
+    "current_valuation_snapshot": {
+      "data_date": "2026-05-22",
+      "stock_price_approx": "约59-60元",
+      "total_market_cap_approx": "约1.07-1.09万亿元",
+      "pe_ttm": "约7.38 (理杏仁3年分位点2.90%)",
+      "pe_ttm_alt": "约8.19 (基于2025年扣非净利)",
+      "pb": "约0.98-1.07 (破净附近)",
+      "pb_note": "当前PB显著低于历史中位数约1.5倍",
+      "dividend_yield": "约4.5%-4.8%",
+      "ev_ebitda_note": "API返回EV/EBITDA-24A不在索引中",
+      "pev_2026e": "约0.6倍",
+      "pb_2026e": "约0.9倍"
+    },
+    "per_share_indicators_quarterly": [
+      {
+        "period": "Q1",
+        "eps_adjusted": 1.54,
+        "bvps_adjusted": 42.24,
+        "bvps_raw": 54.96,
+        "operating_cf_per_share": 3.55,
+        "capital_reserve_per_share": 7.37,
+        "undistributed_profit_per_share": 28.61
+      },
+      {
+        "period": "H1",
+        "eps_adjusted": 3.29,
+        "bvps_adjusted": 43.32,
+        "bvps_raw": 56.29,
+        "operating_cf_per_share": 1.06,
+        "capital_reserve_per_share": 7.10,
+        "undistributed_profit_per_share": 30.29
+      },
+      {
+        "period": "Q3",
+        "eps_adjusted": 4.63,
+        "bvps_adjusted": 43.33,
+        "bvps_raw": 57.41,
+        "operating_cf_per_share": 2.72,
+        "capital_reserve_per_share": 7.11,
+        "undistributed_profit_per_share": 30.65
+      },
+      {
+        "period": "FY2021",
+        "eps_adjusted": 5.77,
+        "bvps_adjusted": 44.44,
+        "bvps_raw": 58.96,
+        "operating_cf_per_share": 4.93,
+        "capital_reserve_per_share": 7.13,
+        "undistributed_profit_per_share": 31.15
+      },
+      {
+        "period": "FY2022-Q1?",
+        "eps_adjusted": 1.18,
+        "bvps_adjusted": 45.60,
+        "bvps_raw": 60.01,
+        "operating_cf_per_share": 13.50,
+        "capital_reserve_per_share": 6.88,
+        "undistributed_profit_per_share": 32.25
+      }
+    ],
+    "analyst_forecast": {
+      "source": "券商研报(2026年3月)",
+      "2026e_net_profit": "约1518亿元",
+      "2027e_net_profit": "约1708亿元",
+      "2026e_pev": "0.6倍",
+      "2026e_pb": "0.9倍",
+      "rating": "维持买入",
+      "catalysts": "渠道转型、康养生态对负债端拉动、银保业务引领增长"
+    },
+    "valuation_context": {
+      "historical_pb_median": "约1.5倍",
+      "current_pb_vs_median": "当前PB约0.98-1.07，远低于1.5倍历史中位数",
+      "pe_3y_percentile": "2.90% (极度低位)",
+      "fvii_equity_note": "2025H1股票投资中FVOCI占比约65%，明显高于同业"
+    }
+  },
+
+  "6_同行业可比公司": {
+    "industry": "保险 (BK0056)",
+    "note": "API readIndustryPeers 连接失败，以下为A股保险板块主要可比公司",
+    "peers_a_share": [
+      {
+        "code": "601628",
+        "name": "中国人寿",
+        "note": "寿险龙头，最大竞争对手"
+      },
+      {
+        "code": "601601",
+        "name": "中国太保",
+        "note": "综合保险集团"
+      },
+      {
+        "code": "601336",
+        "name": "新华保险",
+        "note": "寿险公司"
+      },
+      {
+        "code": "601319",
+        "name": "中国人保",
+        "note": "财险龙头"
+      }
+    ],
+    "peers_h_share": [
+      {
+        "code": "2318.HK",
+        "name": "中国平安(H股)"
+      },
+      {
+        "code": "2628.HK",
+        "name": "中国人寿(H股)"
+      },
+      {
+        "code": "2601.HK",
+        "name": "中国太保(H股)"
+      },
+      {
+        "code": "1336.HK",
+        "name": "新华保险(H股)"
+      },
+      {
+        "code": "1339.HK",
+        "name": "中国人保(H股)"
+      },
+      {
+        "code": "1299.HK",
+        "name": "友邦保险"
+      }
+    ]
+  },
+
+  "7_综合数据摘要_供下游分析Agent": {
+    "investment_thesis_key_points": [
+      "2025年扣非净利润1437.73亿，同比增长22.5%，盈利强劲恢复",
+      "ROE回升至13.47%(加权14.00%)，连续两年高于12%",
+      "当前PE-TTM约7.38，处于3年分位点2.90%的极端低位",
+      "当前PB约0.98-1.07，处于破净边缘，远低于历史中位数1.5倍",
+      "股息率约4.5%-4.8%，高股息防御属性强",
+      "2025年投资收益率改善，FVOCI策略平滑波动",
+      "银保渠道NBV大增29.3%，寿险改革成效显著",
+      "经营性现金流每股36.37元，为近年最高",
+      "总资产13.90万亿，全球保险品牌价值第一"
+    ],
+    "risk_factors": [
+      "资产负债率89.81%，保险行业高杠杆特性",
+      "长端利率趋势性下行影响投资收益率",
+      "地产风险敞口（商誉减值从441亿降至381亿，仍需关注）",
+      "经济放缓可能影响保费增速",
+      "权益市场波动对投资收益的影响",
+      "港股折价可能拖累A股估值"
+    ],
+    "valuation_checklist": {
+      "pe_ttm": {"value": "7.38", "percentile_3y": "2.90%", "signal": "极度低估"},
+      "pb": {"value": "0.98-1.07", "vs_historical_median_1.5x": "深度折价", "signal": "破净边缘"},
+      "dividend_yield": {"value": "4.5-4.8%", "signal": "高股息防御"},
+      "roe": {"value": "13.47%", "trend": "上升", "signal": "盈利能力恢复"},
+      "eps_growth": {"value": "+7.88%", "trend": "连续正增长", "signal": "业绩确认反转"},
+      "pev_2026e": {"value": "0.6倍", "signal": "历史低位"}
+    }
+  }
+}

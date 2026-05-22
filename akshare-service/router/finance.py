@@ -1,7 +1,7 @@
 """财务三表 + 核心指标"""
 import akshare as ak
 from fastapi import APIRouter, Query
-from . import to_em_code, safe_to_json
+from . import to_em_code, safe_to_json, safe_to_json_slim, INCOME_COLS, BALANCE_COLS, CASHFLOW_COLS
 
 router = APIRouter(prefix="/api/v1", tags=["finance"])
 
@@ -25,24 +25,24 @@ def get_finance(stock_code: str, years: int = Query(default=5, ge=1, le=15)):
         "errors": [],
     }
 
-    # 利润表
+    # 利润表 (仅保留关键列, 减少90%数据量)
     try:
         df = ak.stock_profit_sheet_by_report_em(symbol=em_code)
-        result["income_statement"] = safe_to_json(df, years)
+        result["income_statement"] = safe_to_json_slim(df, years, INCOME_COLS)
     except Exception as e:
         result["errors"].append(f"利润表: {e}")
 
     # 资产负债表
     try:
         df = ak.stock_balance_sheet_by_report_em(symbol=em_code)
-        result["balance_sheet"] = safe_to_json(df, years)
+        result["balance_sheet"] = safe_to_json_slim(df, years, BALANCE_COLS)
     except Exception as e:
         result["errors"].append(f"资产负债表: {e}")
 
     # 现金流量表
     try:
         df = ak.stock_cash_flow_sheet_by_report_em(symbol=em_code)
-        result["cash_flow"] = safe_to_json(df, years)
+        result["cash_flow"] = safe_to_json_slim(df, years, CASHFLOW_COLS)
     except Exception as e:
         result["errors"].append(f"现金流量表: {e}")
 

@@ -15,7 +15,7 @@ public class FinanceApiClient {
 
     public Map<String, Object> callApi(String path) {
         String url = BASE_URL + path;
-        String response = HttpUtil.get(url, 30000);
+        String response = HttpUtil.get(url, 120000);
         return JSONUtil.toBean(response,
                 new TypeReference<Map<String, Object>>() {}, false);
     }
