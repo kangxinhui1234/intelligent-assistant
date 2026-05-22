@@ -8,6 +8,9 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.modelretry.ModelRetryInterce
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolerror.ToolErrorInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolretry.ToolRetryInterceptor;
 import com.kxh.aiagent.tools.*;
+import com.kxh.aiagent.tools.finance.RemoteFinanceDataReader;
+import com.kxh.aiagent.tools.finance.RemoteIndustryReader;
+import com.kxh.aiagent.tools.finance.RemoteValuationReader;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
@@ -26,9 +29,10 @@ public class InvestMultiAgentConfig {
 
     @Bean
     public ToolCallback[] dataCollectorTools() {
-        WebSearchTool webSearchTool = new WebSearchTool();
-        WebPageScape webPageScape = new WebPageScape();
-        return ToolCallbacks.from(webSearchTool, webPageScape);
+        RemoteFinanceDataReader financeReader = new RemoteFinanceDataReader();
+        RemoteValuationReader valuationReader = new RemoteValuationReader();
+        RemoteIndustryReader industryReader = new RemoteIndustryReader();
+        return ToolCallbacks.from(financeReader, valuationReader, industryReader);
     }
 
     @Bean
@@ -45,20 +49,22 @@ public class InvestMultiAgentConfig {
                 .model(dashscopeChatModel)
                 .tools(dataCollectorTools)
                 .systemPrompt("""
-                        你是一个专业的金融数据采集Agent。你的职责是：
-                        1. 根据用户提供的股票代码或公司名称，搜索并收集相关的财务数据、市场信息和行业动态
-                        2. 从互联网上获取最新的财报数据、估值指标、行业研报等信息
-                        3. 整理并结构化收集到的数据，方便后续分析使用
-                        注意：只收集数据，不做分析判断。确保数据来源可靠。
+                        你是一个专业的金融数据采集Agent。你有3个精确数据工具：
+                        1. readFinanceData: 获取财务三表(利润表/资产负债表/现金流量表) + ROE/ROA/毛利率等核心指标
+                        2. readValuationData: 获取PE-TTM/PB/PS/PEG/市值/预测PE
+                        3. readStockInfo + readIndustryPeers: 获取公司基本信息和同行业可比公司列表
+                        所有数据来源于中国A股市场官方披露，真实可靠。
+                        你的职责是：调用这些工具获取目标股票的全部数据，以结构化方式返回，不做分析判断。
                         """)
                 .instruction("""
-                        使用搜索工具获取目标公司的：财务指标(营收、利润、ROE等)、估值数据(PE、PB、PS等)、
-                        行业对比数据、最新公告和研报摘要。
-                        将所有收集到的数据以结构化的方式返回。
+                        1. 先调用readStockInfo获取公司基本信息(行业、主营业务等)
+                        2. 同时调用readFinanceData和readValuationData获取财务和估值数据
+                        3. 调用readIndustryPeers获取同行业可比公司列表
+                        4. 将所有数据整理为结构化JSON，完整传递给下游分析Agent
                         """)
                 .hooks(
-                        ModelCallLimitHook.builder().runLimit(10).build(),
-                        ToolCallLimitHook.builder().runLimit(8).build()
+                        ModelCallLimitHook.builder().runLimit(30).build(),
+                        ToolCallLimitHook.builder().runLimit(20).build()
                 )
                 .interceptors(
                         ModelRetryInterceptor.builder().maxAttempts(3).build(),
@@ -92,7 +98,7 @@ public class InvestMultiAgentConfig {
                         5. 投资建议：明确的买入/持有/卖出建议及理由
                         """)
                 .hooks(
-                        ModelCallLimitHook.builder().runLimit(8).build()
+                        ModelCallLimitHook.builder().runLimit(30).build()
                 )
                 .interceptors(
                         ModelRetryInterceptor.builder().maxAttempts(3).build(),
@@ -125,8 +131,8 @@ public class InvestMultiAgentConfig {
                         使用generateMarkdown工具生成最终报告，并返回下载地址。
                         """)
                 .hooks(
-                        ModelCallLimitHook.builder().runLimit(8).build(),
-                        ToolCallLimitHook.builder().runLimit(5).build()
+                        ModelCallLimitHook.builder().runLimit(30).build(),
+                        ToolCallLimitHook.builder().runLimit(20).build()
                 )
                 .interceptors(
                         ModelRetryInterceptor.builder().maxAttempts(3).build(),

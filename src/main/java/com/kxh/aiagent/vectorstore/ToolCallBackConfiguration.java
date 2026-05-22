@@ -1,6 +1,9 @@
 package com.kxh.aiagent.vectorstore;
 
 import com.kxh.aiagent.tools.*;
+import com.kxh.aiagent.tools.finance.RemoteFinanceDataReader;
+import com.kxh.aiagent.tools.finance.RemoteIndustryReader;
+import com.kxh.aiagent.tools.finance.RemoteValuationReader;
 import com.kxh.aiagent.tools.financeTool.ValuationQuery;
 import com.kxh.aiagent.tools.financeTool.financeIndexQuery;
 import com.kxh.aiagent.tools.manager.CompatibleToolCallback;
@@ -48,6 +51,9 @@ public class ToolCallBackConfiguration {
         CustomerTools customerTools = new CustomerTools();
         TerminateTool terminateTool = new TerminateTool();
         MarkdownGenerationTool markdownGenerationTool = new MarkdownGenerationTool();
+        RemoteFinanceDataReader remoteFinanceDataReader = new RemoteFinanceDataReader();
+        RemoteValuationReader remoteValuationReader = new RemoteValuationReader();
+        RemoteIndustryReader remoteIndustryReader = new RemoteIndustryReader();
         ToolCallback[] toolCallbacks = ToolCallbacks.from(
                 downloadInternetFile,
                 fileOptionTool,
@@ -59,7 +65,10 @@ public class ToolCallBackConfiguration {
                 terminateTool,
              //   financeIndexQuery,
               //  valuationQuery,
-                markdownGenerationTool
+                markdownGenerationTool,
+                remoteFinanceDataReader,
+                remoteValuationReader,
+                remoteIndustryReader
         );
         // 创建新数组
         ToolCallback[] merged = new ToolCallback[listCallBacks.length + toolCallbacks.length];
