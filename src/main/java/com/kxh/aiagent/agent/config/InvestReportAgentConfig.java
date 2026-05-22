@@ -5,7 +5,6 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit.ModelCallLimitHook;
 import com.alibaba.cloud.ai.graph.agent.hook.toolcalllimit.ToolCallLimitHook;
-import com.alibaba.cloud.ai.graph.agent.interceptor.modelretry.ModelRetryInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolerror.ToolErrorInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolretry.ToolRetryInterceptor;
 import com.kxh.aiagent.tools.MarkdownGenerationTool;
@@ -56,7 +55,6 @@ public class InvestReportAgentConfig {
                         ToolCallLimitHook.builder().runLimit(8).build()
                 )
                 .interceptors(
-                        ModelRetryInterceptor.builder().maxAttempts(3).build(),
                         ToolRetryInterceptor.builder().maxRetries(2).build(),
                         ToolErrorInterceptor.builder().build()
                 )
@@ -75,7 +73,6 @@ public class InvestReportAgentConfig {
                 .instruction(instruction)
                 .hooks(ModelCallLimitHook.builder().runLimit(6).build())
                 .interceptors(
-                        ModelRetryInterceptor.builder().maxAttempts(2).build(),
                         ToolErrorInterceptor.builder().build()
                 )
                 .enableLogging(true)
@@ -290,7 +287,6 @@ public class InvestReportAgentConfig {
                         ToolCallLimitHook.builder().runLimit(5).build()
                 )
                 .interceptors(
-                        ModelRetryInterceptor.builder().maxAttempts(3).build(),
                         ToolRetryInterceptor.builder().maxRetries(2).build(),
                         ToolErrorInterceptor.builder().build()
                 )
