@@ -6,19 +6,19 @@ import com.alibaba.cloud.ai.graph.agent.hook.toolcalllimit.ToolCallLimitHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.modelretry.ModelRetryInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolerror.ToolErrorInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolretry.ToolRetryInterceptor;
+import com.kxh.aiagent.agent.progress.ProgressEventBus;
+import com.kxh.aiagent.agent.progress.ProgressHook;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
 
 @Configuration
 public class ReactAgentConfig {
 
     @Bean
-    public ReactAgent generalAgent(ChatModel dashscopeChatModel, ToolCallback[] toolCallbacks2) {
+    public ReactAgent generalAgent(ChatModel dashscopeChatModel, ToolCallback[] toolCallbacks2,
+                                    ProgressEventBus progressEventBus) {
         return ReactAgent.builder()
                 .name("kxhAgent")
                 .model(dashscopeChatModel)
@@ -36,6 +36,7 @@ public class ReactAgentConfig {
                         在你决定结束的同时整合会话历史，返回一个最终的回答结果。
                         """)
                 .hooks(
+                        new ProgressHook(progressEventBus),
                         ModelCallLimitHook.builder().runLimit(15).build(),
                         ToolCallLimitHook.builder().runLimit(10).build()
                 )
@@ -49,7 +50,8 @@ public class ReactAgentConfig {
     }
 
     @Bean
-    public ReactAgent investAgent(ChatModel dashscopeChatModel, ToolCallback[] toolCallbacks2) {
+    public ReactAgent investAgent(ChatModel dashscopeChatModel, ToolCallback[] toolCallbacks2,
+                                   ProgressEventBus progressEventBus) {
         return ReactAgent.builder()
                 .name("InvestAgent")
                 .model(dashscopeChatModel)
@@ -74,6 +76,7 @@ public class ReactAgentConfig {
                         最后请用工具生成一份markdown文档，生成最终的投资分析及建议，请把markdown下载地址告诉我。
                         """)
                 .hooks(
+                        new ProgressHook(progressEventBus),
                         ModelCallLimitHook.builder().runLimit(20).build(),
                         ToolCallLimitHook.builder().runLimit(10).build()
                 )

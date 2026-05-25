@@ -37,10 +37,11 @@ public class InvestManus extends ToolCallAgent{
 """;
 
         String nextPrompt= """
-               Based on user needs, you can answer by your knowledge,or select the  appropriate tool . For complex tasks,
-                you can break down the problem and use different tools step by step to solve it. 你选择一个工具同时能告诉我选择他的一些前因后果，不要选择一个工具，然后一句话不说
-                . 最后请用工具生成一分markdown文档，生成最终的投资分析及建议,请把markdown下载地址告诉我
-               If you want to stop the interaction at any point, use the `terminate` tool/function call.
+               Based on user needs, you can answer by your knowledge, or select the appropriate tool. For complex tasks,
+                you can break down the problem and use different tools step by step to solve it.
+                你选择一个工具同时能告诉我选择它的前因后果, 不要选择一个工具然后一句话不说.
+                最后请用工具生成一份markdown文档, 生成最终的投资分析及建议, 请把markdown下载地址告诉我.
+               If you want to stop the interaction at any point, use the terminate tool/function call.
                """;
 
         this.setNextPrompt(nextPrompt);
