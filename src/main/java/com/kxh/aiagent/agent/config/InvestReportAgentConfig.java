@@ -82,6 +82,7 @@ public class InvestReportAgentConfig {
                 .interceptors(
                         ToolErrorInterceptor.builder().build()
                 )
+                .outputKey(name)
                 .enableLogging(true)
                 .build();
     }

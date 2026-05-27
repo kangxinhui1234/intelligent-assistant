@@ -37,7 +37,7 @@ public class MySimpleVectorStore  {
     public VectorStore simpleVectorStore(@Qualifier("dashscopeEmbeddingModel")EmbeddingModel dashScopeEmbeddingModel) throws IOException {
         SimpleVectorStore simpleVectorStore = SimpleVectorStore.builder(dashScopeEmbeddingModel)
                 .build();
-        simpleVectorStore.doAdd(reader.loadMarkdown());
+        // simpleVectorStore.doAdd(reader.loadMarkdown());
         return simpleVectorStore;
     }
 

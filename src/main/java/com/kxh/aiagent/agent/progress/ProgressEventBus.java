@@ -26,7 +26,10 @@ public class ProgressEventBus {
     public void publish(String requestId, AgentProgressEvent event) {
         StreamProgressEmitter emitter = listeners.get(requestId);
         if (emitter != null) {
+            log.info("SSE event → {} {} (request: {})", event.type(), event.agentName(), requestId);
             emitter.send(event);
+        } else {
+            log.warn("SSE event dropped: no listener for requestId={}, event={}", requestId, event.type());
         }
     }
 }
