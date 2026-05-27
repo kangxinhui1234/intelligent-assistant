@@ -13,7 +13,11 @@ public record AgentProgressEvent(
         String content,
         String stage,
         int totalStages,
-        long timestamp
+        long timestamp,
+        Long durationMs,
+        Integer promptTokens,
+        Integer completionTokens,
+        Integer totalTokens
 ) {
     private static final ObjectMapper mapper = new ObjectMapper();
 
@@ -24,31 +28,37 @@ public record AgentProgressEvent(
     }
 
     public static AgentProgressEvent agentStart(String agentName, String stage, int totalStages) {
-        return new AgentProgressEvent("agent_start", agentName, null, stage, totalStages, 0);
+        return new AgentProgressEvent("agent_start", agentName, null, stage, totalStages, 0, null, null, null, null);
     }
 
     public static AgentProgressEvent agentStart(String agentName) {
-        return new AgentProgressEvent("agent_start", agentName, null, null, 0, 0);
+        return new AgentProgressEvent("agent_start", agentName, null, null, 0, 0, null, null, null, null);
     }
 
     public static AgentProgressEvent agentMessage(String agentName, String content) {
-        return new AgentProgressEvent("agent_message", agentName, content, null, 0, 0);
+        return new AgentProgressEvent("agent_message", agentName, content, null, 0, 0, null, null, null, null);
     }
 
     public static AgentProgressEvent agentDone(String agentName, String stage, int totalStages) {
-        return new AgentProgressEvent("agent_done", agentName, null, stage, totalStages, 0);
+        return new AgentProgressEvent("agent_done", agentName, null, stage, totalStages, 0, null, null, null, null);
     }
 
     public static AgentProgressEvent agentDone(String agentName) {
-        return new AgentProgressEvent("agent_done", agentName, null, null, 0, 0);
+        return new AgentProgressEvent("agent_done", agentName, null, null, 0, 0, null, null, null, null);
+    }
+
+    public static AgentProgressEvent agentDone(String agentName, long durationMs,
+                                                Integer promptTokens, Integer completionTokens, Integer totalTokens) {
+        return new AgentProgressEvent("agent_done", agentName, null, null, 0, 0,
+                durationMs, promptTokens, completionTokens, totalTokens);
     }
 
     public static AgentProgressEvent agentError(String agentName, String error) {
-        return new AgentProgressEvent("agent_error", agentName, error, null, 0, 0);
+        return new AgentProgressEvent("agent_error", agentName, error, null, 0, 0, null, null, null, null);
     }
 
     public static AgentProgressEvent progress(String agentName, String message) {
-        return new AgentProgressEvent("progress", agentName, message, null, 0, 0);
+        return new AgentProgressEvent("progress", agentName, message, null, 0, 0, null, null, null, null);
     }
 
     public String toJson() {

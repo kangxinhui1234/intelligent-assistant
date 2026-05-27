@@ -3,6 +3,7 @@ package com.kxh.aiagent.agent.config;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit.ModelCallLimitHook;
 import com.alibaba.cloud.ai.graph.agent.hook.toolcalllimit.ToolCallLimitHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolerror.ToolErrorInterceptor;
@@ -321,6 +322,7 @@ public class InvestReportAgentConfig {
                         investmentAdvisorAgent,
                         reportAgent
                 ))
+                .saver(MemorySaver.builder().build())
                 .build();
     }
 }

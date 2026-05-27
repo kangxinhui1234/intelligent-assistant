@@ -112,6 +112,10 @@ knife4j:
     language: zh_cn
 chat-system-type: 0
 
+tool:
+  web-search:
+    api-key: ${SEARCH_API_KEY:j219JV818Uuokeu3c5pUnCoY}
+
 logging:
   level:
     org.springframework.ai.mcp: DEBUG

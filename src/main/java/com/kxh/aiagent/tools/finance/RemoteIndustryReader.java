@@ -17,7 +17,10 @@ public class RemoteIndustryReader {
             获取A股上市公司的基本信息：公司全称、主营业务、所属行业、上市日期、总股本、流通股本等。""")
     public String readStockInfo(
             @ToolParam(description = "股票代码，如600519") String stockCode) {
-        Map<String, Object> result = client.callApi("/stock_info/" + stockCode);
+        if (!com.kxh.aiagent.tools.InputValidator.isValidStockCode(stockCode)) {
+            return "无效的股票代码，请输入6位数字代码如600519";
+        }
+        Map<String, Object> result = client.callApi("/stock_info/" + stockCode.trim());
         return JSONUtil.toJsonStr(result);
     }
 
@@ -26,7 +29,10 @@ public class RemoteIndustryReader {
             用于行业对比分析。""")
     public String readIndustryPeers(
             @ToolParam(description = "股票代码，如600519") String stockCode) {
-        Map<String, Object> result = client.callApi("/industry/peers/" + stockCode);
+        if (!com.kxh.aiagent.tools.InputValidator.isValidStockCode(stockCode)) {
+            return "无效的股票代码，请输入6位数字代码如600519";
+        }
+        Map<String, Object> result = client.callApi("/industry/peers/" + stockCode.trim());
         return JSONUtil.toJsonStr(result);
     }
 }

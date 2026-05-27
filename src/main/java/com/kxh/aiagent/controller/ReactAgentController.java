@@ -150,10 +150,9 @@ public class ReactAgentController {
                         .addMetadata(ProgressHook.CONFIG_KEY, requestId)
                         .build();
 
-                // 发送流水线结构信息
                 log.info("═══ 投资研报流水线启动: threadId={}, requestId={} ═══", finalThreadId, requestId);
                 progress.progress("投资研报流水线",
-                        "4阶段流水线启动: 数据采集 → 8Agent并行分析 → 投资建议 → 研报生成");
+                        "4阶段流水线启动: 数据采集 → 8Agent并行分析 → 投资建议 → 研报生成\nthreadId: " + finalThreadId);
 
                 CountDownLatch latch = new CountDownLatch(1);
 
@@ -325,6 +324,60 @@ public class ReactAgentController {
     @GetMapping("/status")
     public String status() {
         return "{\"activeConnections\":" + activeEmitters.size() + "}";
+    }
+
+    // ==================== 断点续跑 ====================
+
+    @GetMapping(value = "/invest/analysis/resume", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter resumeInvestAnalysis(@RequestParam String threadId,
+                                            @RequestParam(required = false) String message) {
+        SseEmitter emitter = new SseEmitter(600_000L);
+        StreamProgressEmitter progress = new StreamProgressEmitter(emitter);
+        String requestId = UUID.randomUUID().toString();
+        activeEmitters.put(requestId, emitter);
+        progressEventBus.register(requestId, progress);
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                RunnableConfig config = RunnableConfig.builder()
+                        .threadId(threadId)
+                        .addMetadata(ProgressHook.CONFIG_KEY, requestId)
+                        .build();
+
+                log.info("═══ 投资研报流水线断点续跑: threadId={} ═══", threadId);
+                progress.progress("投资研报流水线", "从断点恢复执行: threadId=" + threadId);
+
+                String resumeInput = (message != null && !message.isBlank()) ? message : "继续执行";
+                CountDownLatch latch = new CountDownLatch(1);
+
+                investReportPipeline.streamMessages(resumeInput, config)
+                        .subscribe(
+                                msg -> {},
+                                error -> {
+                                    log.error("断点续跑异常: {}", error.getMessage(), error);
+                                    progress.agentError("投资研报流水线", error.getMessage());
+                                    latch.countDown();
+                                },
+                                () -> {
+                                    log.info("═══ 断点续跑完成 ═══");
+                                    progress.complete();
+                                    latch.countDown();
+                                }
+                        );
+
+                latch.await();
+            } catch (Exception e) {
+                log.error("断点续跑异常: {}", e.getMessage(), e);
+                progress.agentError("投资研报流水线", e.getMessage());
+                progress.error(e);
+            } finally {
+                cleanup(requestId);
+            }
+        });
+
+        emitter.onCompletion(() -> cleanup(requestId));
+        emitter.onTimeout(() -> cleanup(requestId));
+        return emitter;
     }
 
     private void cleanup(String requestId) {

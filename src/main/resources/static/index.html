@@ -155,6 +155,15 @@
         }
 
         .agent-card-header .agent-label { flex: 1; }
+        .agent-card-header .metrics {
+            display: flex; gap: 8px; font-size: 11px; color: var(--text-dim); font-weight: 400;
+        }
+        .agent-card-header .metrics .metric-badge {
+            padding: 2px 7px; border-radius: 10px; background: rgba(139,143,163,.1);
+            white-space: nowrap;
+        }
+        .agent-card-header .metrics .metric-badge.duration { color: var(--accent); }
+        .agent-card-header .metrics .metric-badge.tokens { color: var(--green); }
         .agent-card-header .toggle-arrow {
             font-size: 11px; color: var(--text-dim); transition: transform .25s;
         }
@@ -361,6 +370,7 @@
             } else if (p.type === 'agent_done') {
                 agentStates.set(p.agentName, 'done');
                 updateCardStatus(p.agentName, 'done');
+                updateCardMetrics(p.agentName, p.durationMs, p.totalTokens);
                 collapseCard(p.agentName);
                 lastActiveAgent = findRunningAgent();
             } else if (p.type === 'agent_error') {
@@ -464,6 +474,7 @@
         summary.innerHTML =
             '<span class="status-icon">' + statusHtml(status) + '</span>' +
             '<span class="agent-label">' + name + '</span>' +
+            '<span class="metrics"></span>' +
             '<span class="toggle-arrow">▾</span>';
 
         const body = document.createElement('div');
@@ -503,6 +514,22 @@
         if (!card) return;
         card.el.className = 'agent-card ' + status;
         card.summary.querySelector('.status-icon').innerHTML = statusHtml(status);
+    }
+
+    function updateCardMetrics(name, durationMs, totalTokens) {
+        const card = agentCardMap.get(name);
+        if (!card) return;
+        const metricsEl = card.summary.querySelector('.metrics');
+        if (!metricsEl) return;
+        let html = '';
+        if (durationMs != null) {
+            var sec = (durationMs / 1000).toFixed(1);
+            html += '<span class="metric-badge duration">' + sec + 's</span>';
+        }
+        if (totalTokens != null) {
+            html += '<span class="metric-badge tokens">' + totalTokens + ' tokens</span>';
+        }
+        metricsEl.innerHTML = html;
     }
 
     function collapseCard(name) {

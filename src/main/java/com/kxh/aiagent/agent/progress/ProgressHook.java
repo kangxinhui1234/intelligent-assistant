@@ -6,6 +6,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.Usage;
 
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ public class ProgressHook extends AgentHook {
 
     private final ProgressEventBus eventBus;
     private final ConcurrentHashMap<String, Integer> messageCountBefore = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Long> startTimestamps = new ConcurrentHashMap<>();
 
     public ProgressHook(ProgressEventBus eventBus) {
         this.eventBus = eventBus;
@@ -36,8 +38,11 @@ public class ProgressHook extends AgentHook {
         String requestId = getRequestId(config);
         String agentName = getAgentName();
         if (requestId != null && agentName != null) {
+            String trackKey = requestId + ":" + agentName;
             int count = getMessageCount(state);
-            messageCountBefore.put(requestId + ":" + agentName, count);
+            messageCountBefore.put(trackKey, count);
+            startTimestamps.put(trackKey, System.currentTimeMillis());
+
             log.info("▶ Agent start: {} (request: {}, msgCount: {})", agentName, requestId, count);
             eventBus.publish(requestId, AgentProgressEvent.agentStart(agentName));
         } else {
@@ -52,18 +57,45 @@ public class ProgressHook extends AgentHook {
         String agentName = getAgentName();
         if (requestId != null && agentName != null) {
             String trackKey = requestId + ":" + agentName;
+
+            // Calculate duration
+            long startTime = startTimestamps.getOrDefault(trackKey, System.currentTimeMillis());
+            long durationMs = System.currentTimeMillis() - startTime;
+            startTimestamps.remove(trackKey);
+
+            // Extract agent output
             int beforeCount = messageCountBefore.getOrDefault(trackKey, 0);
             messageCountBefore.remove(trackKey);
-
             String output = extractNewMessages(state, beforeCount);
-            if (output != null && !output.isBlank()) {
-                log.info("✓ Agent done: {} (request: {}, outputLen: {})", agentName, requestId, output.length());
-                eventBus.publish(requestId, AgentProgressEvent.agentMessage(agentName, output));
-            } else {
-                log.info("✓ Agent done: {} (request: {}, no output)", agentName, requestId);
-                log.debug("State keys after {}: {}", agentName, state.data().keySet());
+
+            // Try to extract token usage from state
+            Integer promptTokens = null, completionTokens = null, totalTokens = null;
+            try {
+                Object tokenObj = state.data().get("_TOKEN_USAGE_");
+                if (tokenObj instanceof Usage usage) {
+                    promptTokens = usage.getPromptTokens() != null ? usage.getPromptTokens().intValue() : null;
+                    completionTokens = usage.getCompletionTokens() != null ? usage.getCompletionTokens().intValue() : null;
+                    totalTokens = usage.getTotalTokens() != null ? usage.getTotalTokens().intValue() : null;
+                } else if (tokenObj instanceof Map<?, ?> usageMap) {
+                    promptTokens = toInt(usageMap.get("promptTokens"));
+                    completionTokens = toInt(usageMap.get("completionTokens"));
+                    totalTokens = toInt(usageMap.get("totalTokens"));
+                }
+            } catch (Exception e) {
+                log.debug("Token usage extraction failed for {}: {}", agentName, e.getMessage());
             }
-            eventBus.publish(requestId, AgentProgressEvent.agentDone(agentName));
+
+            if (output != null && !output.isBlank()) {
+                eventBus.publish(requestId, AgentProgressEvent.agentMessage(agentName, output));
+            }
+
+            log.info("✓ Agent done: {} (request: {}, duration: {}ms, tokens: {}, outputLen: {})",
+                    agentName, requestId, durationMs,
+                    totalTokens != null ? totalTokens : "N/A",
+                    output != null ? output.length() : 0);
+
+            eventBus.publish(requestId, AgentProgressEvent.agentDone(
+                    agentName, durationMs, promptTokens, completionTokens, totalTokens));
         } else {
             log.warn("ProgressHook.afterAgent skipped: requestId={}, agentName={}", requestId, agentName);
         }
@@ -96,6 +128,11 @@ public class ProgressHook extends AgentHook {
         } catch (Exception e) {
             return 0;
         }
+    }
+
+    private Integer toInt(Object obj) {
+        if (obj instanceof Number n) return n.intValue();
+        return null;
     }
 
     private String getRequestId(RunnableConfig config) {

@@ -16,6 +16,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,6 +30,10 @@ public class ToolCallBackConfiguration {
     financeIndexQuery financeIndexQuery;
     @Autowired(required = false)
     ValuationQuery valuationQuery;
+
+    @Value("${tool.web-search.api-key:}")
+    private String webSearchApiKey;
+
     @Bean
     @Primary
     public ToolCallback[] toolCallbacks2(){
@@ -45,8 +51,7 @@ public class ToolCallBackConfiguration {
         DownloadInternetFile downloadInternetFile = new DownloadInternetFile();
         FileOptionTool fileOptionTool = new FileOptionTool();
         PDFGenerationTool pdfGenerationTool = new PDFGenerationTool();
-        SystemCmdExec systemCmdExec = new SystemCmdExec();
-        WebSearchTool webSearchTool = new WebSearchTool();
+        WebSearchTool webSearchTool = new WebSearchTool(webSearchApiKey);
         WebPageScape webPageScape = new WebPageScape();
         CustomerTools customerTools = new CustomerTools();
         TerminateTool terminateTool = new TerminateTool();
@@ -58,7 +63,6 @@ public class ToolCallBackConfiguration {
                 downloadInternetFile,
                 fileOptionTool,
                 pdfGenerationTool,
-                systemCmdExec,
                 webSearchTool,
                 webPageScape,
                 customerTools,

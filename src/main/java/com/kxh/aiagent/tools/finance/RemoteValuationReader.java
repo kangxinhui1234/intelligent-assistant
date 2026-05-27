@@ -19,7 +19,11 @@ public class RemoteValuationReader {
     public String readValuationData(
             @ToolParam(description = "股票代码，如600519") String stockCode,
             @ToolParam(description = "查询最近几年的数据，默认5年") int years) {
-        Map<String, Object> result = client.callApi("/valuation/" + stockCode + "?years=" + years);
+        if (!com.kxh.aiagent.tools.InputValidator.isValidStockCode(stockCode)) {
+            return "无效的股票代码，请输入6位数字代码如600519";
+        }
+        if (years < 1 || years > 10) years = 5;
+        Map<String, Object> result = client.callApi("/valuation/" + stockCode.trim() + "?years=" + years);
         return JSONUtil.toJsonStr(result);
     }
 }
