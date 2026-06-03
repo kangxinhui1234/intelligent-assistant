@@ -5,7 +5,11 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.search.AndTerm;
 import jakarta.mail.search.FlagTerm;
+import jakarta.mail.search.FromStringTerm;
+import jakarta.mail.search.OrTerm;
+import jakarta.mail.search.SearchTerm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -108,42 +112,61 @@ public class EmailAlertSource implements AlertSource {
             store.connect(host, port, username, password);
             try (Folder f = store.getFolder(folder)) {
                 f.open(Folder.READ_WRITE);
-                Message[] unread = f.search(new FlagTerm(new Flags(Flags.Flag.SEEN), false));
-                log.info("未读邮件数: {}", unread.length);
+
+                // 服务器端先按 "未读 + 发件人" 过滤,大幅减少返回量
+                SearchTerm searchTerm = new FlagTerm(new Flags(Flags.Flag.SEEN), false);
+                if (!senderWhitelist.isEmpty()) {
+                    SearchTerm fromTerm = new FromStringTerm(senderWhitelist.get(0).trim());
+                    for (int i = 1; i < senderWhitelist.size(); i++) {
+                        fromTerm = new OrTerm(fromTerm, new FromStringTerm(senderWhitelist.get(i).trim()));
+                    }
+                    searchTerm = new AndTerm(searchTerm, fromTerm);
+                }
+
+                Message[] candidates;
+                try {
+                    candidates = f.search(searchTerm);
+                } catch (Exception se) {
+                    log.error("IMAP search 失败,本轮跳过: {}", se.getMessage());
+                    return;
+                }
+                log.info("IMAP 命中候选邮件: {} 封 (服务器端已按发件人过滤)", candidates.length);
 
                 int processed = 0;
-                for (Message msg : unread) {
+                int skipped = 0;
+                for (Message msg : candidates) {
                     if (processed >= quota) break;
-                    if (!passFilters(msg)) continue;
-                    handleOne(msg);
-                    if (markAsRead) msg.setFlag(Flags.Flag.SEEN, true);
-                    rateLimiter.recordOne();
-                    processed++;
+                    try {
+                        if (!subjectPassFilter(msg)) {
+                            skipped++;
+                            continue;
+                        }
+                        handleOne(msg);
+                        if (markAsRead) {
+                            try { msg.setFlag(Flags.Flag.SEEN, true); } catch (Exception ignored) {}
+                        }
+                        rateLimiter.recordOne();
+                        processed++;
+                    } catch (Exception perMsg) {
+                        // 单封异常不影响其他邮件
+                        log.warn("单封邮件处理失败,跳过: {}", perMsg.getMessage());
+                        skipped++;
+                    }
                 }
-                log.info("EmailAlertSource 轮询完成,实际处理 {} 封", processed);
+                log.info("EmailAlertSource 轮询完成: 处理={} 跳过={} 候选={}", processed, skipped, candidates.length);
             }
         } catch (Exception e) {
             log.error("EmailAlertSource 轮询失败: {}", e.getMessage(), e);
         }
     }
 
-    private boolean passFilters(Message msg) throws MessagingException {
-        if (!senderWhitelist.isEmpty()) {
-            Address[] froms = msg.getFrom();
-            if (froms == null || froms.length == 0) return false;
-            String fromAddr = ((InternetAddress) froms[0]).getAddress();
-            boolean ok = senderWhitelist.stream().anyMatch(w -> fromAddr.equalsIgnoreCase(w.trim()));
-            if (!ok) {
-                log.debug("邮件被发件人白名单过滤掉: {}", fromAddr);
-                return false;
-            }
-        }
-        if (subjectPattern != null) {
-            String subject = msg.getSubject();
-            if (subject == null || !subjectPattern.matcher(subject).find()) {
-                log.debug("邮件被主题正则过滤掉: subject={}", subject);
-                return false;
-            }
+    /** 主题过滤(已在 passFilters 中,这里抽出方便单封 try-catch) */
+    private boolean subjectPassFilter(Message msg) throws MessagingException {
+        if (subjectPattern == null) return true;
+        String subject = msg.getSubject();
+        if (subject == null || !subjectPattern.matcher(subject).find()) {
+            log.debug("邮件被主题正则过滤掉: subject={}", subject);
+            return false;
         }
         return true;
     }
