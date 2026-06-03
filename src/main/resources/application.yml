@@ -79,14 +79,6 @@ spring:
       host: 127.0.0.1
       port: 6389
 
-  autoconfigure:
-    exclude=org:
-      springframework:
-        boot:
-          autoconfigure:
-            data:
-              redis:
-                RedisAutoConfiguration:server:
 server:
   port: 8092
   servlet:
@@ -116,18 +108,74 @@ tool:
   web-search:
     api-key: ${SEARCH_API_KEY:j219JV818Uuokeu3c5pUnCoY}
 
+# ==================== AIOps 平台配置 ====================
+ops:
+  sls:
+    endpoint: ${ALIYUN_SLS_ENDPOINT:cn-hangzhou.log.aliyuncs.com}
+    project: ${ALIYUN_SLS_PROJECT:log-service-1679531816490379-cn-hangzhou}
+    access-key-id: ${ALIYUN_SLS_AK:}
+    access-key-secret: ${ALIYUN_SLS_SK:}
+    default-logstore: ${ALIYUN_SLS_LOGSTORE:java-service-delivery}
+    max-results-per-query: 30
+    message-truncate-chars: 300
+  notify:
+    local-file:
+      dir: tmp/diagnosis      # 诊断报告本地保存目录(相对项目根)
+    wechat-work:
+      webhook: ${OPS_WECHAT_WORK_WEBHOOK:}
+    dingtalk:
+      webhook: ${OPS_DINGTALK_WEBHOOK:}
+  source:
+    email:
+      enabled: false                       # 总开关,默认关闭
+      host: imap.qq.com
+      port: 993
+      protocol: imaps
+      username: ${OPS_EMAIL_USER:}         # 你的 QQ 邮箱地址,如 xxx@qq.com
+      password: ${OPS_EMAIL_PASS:}         # QQ 邮箱的"授权码"(不是登录密码)
+      folder: INBOX
+      mark-as-read: true                   # 处理后标记已读防重复
+      dry-run: false                       # true=只解析不调流水线(测试用)
+      poll-interval-ms: 600000             # 10 分钟轮询一次
+      max-per-poll: 1                      # 单次最多处理 1 封
+      max-per-hour: 5                      # 每小时最多 5 封
+      max-per-day: 30                      # 每天最多 30 封
+      sender-whitelist: ''                 # 发件人白名单,逗号分隔,空=不过滤
+      subject-pattern: ''                  # 主题正则,空=不过滤
+  budget:
+    enabled: true                          # 总开关
+    incident:
+      max-tokens: 25000                    # 单次 token 警戒值(informational)
+      timeout-seconds: 60
+    service-daily:
+      max-incidents: 100                   # 主硬控: 单服务每日 incident 上限
+      max-tokens: 200000                   # informational
+    global-daily:
+      max-incidents: 1000                  # 主硬控: 全平台每日 incident 上限
+      max-tokens: 5000000                  # informational
+  # 本地代码仓库白名单 — 给 LocalCodeTool 用,后续按需补充
+  # 示例:
+  # code:
+  #   repos:
+  #     - name: fengine-admin                              # 必须和告警邮件里的 appName= 完全一致
+  #       path: D:/code/fengine-admin                      # 本地仓库根目录(已 git clone 好的)
+  #       package-prefix: com.yiittou.fengine              # 用于栈帧 → 文件路径反推
+  #     - name: order-service
+  #       path: D:/code/order-service
+  #       package-prefix: com.example.order
+  code:
+    repos: []
+
 logging:
   level:
     org.springframework.ai.mcp: DEBUG
     org.springframework.ai.mcp.client: DEBUG
     io.modelcontextprotocol: DEBUG
+    com.kxh.aiagent.ops.tool: DEBUG
 
-mybatis:
-  mapper-locations: classpath:mapper/*.xml
-  type-aliases-package: com.kxh.aiagent.entity
-  configuration:
-    map-underscore-to-camel-case: false
 mybatis-plus:
+  mapper-locations: classpath*:mapper/*.xml,classpath*:com/kxh/aiagent/mapper/xml/*.xml
+  type-aliases-package: com.kxh.aiagent.entity,com.kxh.aiagent.ops.entity
   configuration:
     map-underscore-to-camel-case: false
 
@@ -141,4 +189,5 @@ management:
       exposure:
         # 暴露的端点，包含health。使用"*"可暴露所有端点（生产环境慎用）
         include: health
+
 

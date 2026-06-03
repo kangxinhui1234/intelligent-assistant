@@ -1,13 +1,13 @@
 spring:
   autoconfigure:
     exclude:
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
-      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      # 保留 ES 排除 (项目用 Milvus, 不用 ES)
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
       - org.springframework.ai.vectorstore.elasticsearch.autoconfigure.ElasticsearchVectorStoreAutoConfiguration
-      - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
       - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
+      # 保留 JPA 排除 (项目用 MyBatis-Plus,不用 JPA)
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      # 注: 之前排除的 DataSource / MybatisPlus auto-config 已恢复,因为 AIOps 模块需要 MySQL 持久化
   ai:
     vectorstore:
       milvus:
