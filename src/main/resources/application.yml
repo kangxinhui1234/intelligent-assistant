@@ -166,6 +166,20 @@ ops:
   code:
     repos: []
 
+  # 历史故障 RAG (Milvus 2.5 BM25 + dense 混合检索)
+  history:
+    enabled: true
+    milvus:
+      host: ${MILVUS_HOST:127.0.0.1}
+      port: ${MILVUS_PORT:19530}
+      database: default
+      collection: ops_incident_kb
+    embedding-dim: 1536           # 配合 text-embedding-v2
+    top-k: 3                       # 每次检索返回 Top3 相似历史
+    score-threshold: 0.0           # RRF 分数阈值,过低的不返回
+    bm25-weight: 0.4               # 混合排序权重(BM25 / dense)
+    dense-weight: 0.6
+
 logging:
   level:
     org.springframework.ai.mcp: DEBUG

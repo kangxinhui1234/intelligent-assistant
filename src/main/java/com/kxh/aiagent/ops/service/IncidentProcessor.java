@@ -34,6 +34,8 @@ public class IncidentProcessor {
     @Resource private ProgressEventBus progressEventBus;
     @Resource private IncidentPersister persister;
     @Resource private PersistenceWiring persistenceWiring;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.kxh.aiagent.ops.history.OpsHistoryService historyService;
 
     public ProcessOutcome process(RawAlert raw, StreamProgressEmitter optionalProgress, String requestId) {
         IncidentEvent incident = webhookSource.toIncident(raw);
@@ -111,6 +113,8 @@ public class IncidentProcessor {
                         });
                 latch.await();
                 persister.markResolved(incident.incidentId(), null);
+                // 流水线完成 → 自动入历史 RAG 库
+                autoUpsertHistory(incident);
             } catch (Exception e) {
                 log.error("流水线执行异常 incidentId={}: {}", incident.incidentId(), e.getMessage(), e);
                 if (optionalProgress != null) optionalProgress.error(e);
@@ -121,6 +125,34 @@ public class IncidentProcessor {
         });
 
         return ProcessOutcome.launched(incident, threadId);
+    }
+
+    /**
+     * 流水线完成后,把 RootCauseAgent 的输出当作 resolution 写入 Milvus 历史库。
+     * 注意: 同一 incidentId upsert,所以重跑也不会重复。
+     */
+    private void autoUpsertHistory(IncidentEvent incident) {
+        if (historyService == null) return;
+        try {
+            // 从 PersistenceWiring/MySQL 异步反查可能延迟,这里采用最简单粗暴方式:
+            // 通过 IncidentPersister 读 MySQL 取 RootCauseAgent 的最新输出
+            // 由 PersistenceWiring 已经写入,这里再异步触发一次 upsert
+            // 简化版: 用 summary 作为最小可用记录,resolution 留空
+            // 真实 resolution 由 OpsHistoryController.migrate 端点批量回填更稳妥
+            com.kxh.aiagent.ops.history.OpsHistoryRecord record =
+                    new com.kxh.aiagent.ops.history.OpsHistoryRecord(
+                            incident.incidentId(),
+                            incident.serviceName(),
+                            null,
+                            incident.severity() == null ? null : incident.severity().name(),
+                            incident.occurredAt() == null ? 0 : incident.occurredAt().getEpochSecond(),
+                            incident.summary(),
+                            "" // resolution 留空,后续由 migrate 端点完整回填
+                    );
+            historyService.upsert(record);
+        } catch (Exception e) {
+            log.warn("autoUpsertHistory 失败 incidentId={}: {}", incident.incidentId(), e.getMessage());
+        }
     }
 
     public record ProcessOutcome(

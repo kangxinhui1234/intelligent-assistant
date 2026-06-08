@@ -11,6 +11,7 @@ import com.kxh.aiagent.agent.progress.ProgressEventBus;
 import com.kxh.aiagent.agent.progress.ProgressHook;
 import com.kxh.aiagent.ops.tool.AliyunSlsTool;
 import com.kxh.aiagent.ops.tool.DingTalkNotifyTool;
+import com.kxh.aiagent.ops.tool.HistoryQueryTool;
 import com.kxh.aiagent.ops.tool.LocalCodeTool;
 import com.kxh.aiagent.ops.tool.LocalFileNotifyTool;
 import com.kxh.aiagent.ops.tool.WechatWorkNotifyTool;
@@ -175,18 +176,62 @@ public class OpsAgentConfig {
                 .build();
     }
 
+    // ==================== Stage 2 (并行): 历史故障 RAG ====================
+
+    @Bean
+    public ReactAgent historyAgent(ChatModel dashscopeChatModel,
+                                    ProgressEventBus progressEventBus,
+                                    HistoryQueryTool historyQueryTool) {
+        ToolCallback[] tools = ToolCallbacks.from(historyQueryTool);
+        return ReactAgent.builder()
+                .name("HistoryAgent")
+                .model(dashscopeChatModel)
+                .tools(tools)
+                .systemPrompt("""
+                        你是历史故障检索专家。基于 AlertParserAgent 提取的 service + errorClass + summary,
+                        利用 queryHistory 工具调用 Milvus 混合检索(BM25 + 向量),找出 Top3 历史相似事故。
+
+                        工作步骤:
+                        1) 构造查询文本: service + 异常类 + 简要描述 (50-100 字)
+                        2) 调用 queryHistory(queryText, service, errorClass)
+                        3) 整理返回结果
+
+                        判断每条历史的相关性:
+                        - score > 0.5 视为高相关
+                        - 0.3-0.5 中相关
+                        - < 0.3 弱相关,可丢弃""")
+                .instruction("""
+                        最终输出严格 JSON:
+
+                        - serviceHasHistory  布尔   是否找到任何历史相似(score >= 0.3)
+                        - hits               数组   每条含 score / serviceName / errorClass / summary / resolutionSummary(50-100字摘要)
+                        - applicableInsight  字符串 1-3 句话总结这些历史能给当前事故什么启发(若无相关历史就写 "无相关历史可参考")
+
+                        不要 markdown 代码块包裹。""")
+                .hooks(
+                        new ProgressHook(progressEventBus),
+                        ModelCallLimitHook.builder().runLimit(3).build(),
+                        ToolCallLimitHook.builder().runLimit(2).build()
+                )
+                .interceptors(ToolErrorInterceptor.builder().build())
+                .outputKey("HistoryAgent")
+                .enableLogging(true)
+                .build();
+    }
+
     // ==================== Stage 2 并行容器 ====================
 
     @Bean
     public ParallelAgent investigationParallel(
             ReactAgent logRetrievalAgent,
-            ReactAgent codeAnalysisAgent) {
+            ReactAgent codeAnalysisAgent,
+            ReactAgent historyAgent) {
         return ParallelAgent.builder()
                 .name("调查并行集群")
-                .description("LogRetrieval(SLS) + CodeAnalysis(本地代码) 同时跑")
-                .subAgents(List.of(logRetrievalAgent, codeAnalysisAgent))
+                .description("LogRetrieval(SLS) + CodeAnalysis(本地代码) + HistoryAgent(Milvus 混合检索) 同时跑")
+                .subAgents(List.of(logRetrievalAgent, codeAnalysisAgent, historyAgent))
                 .mergeStrategy(new ParallelAgent.ConcatenationMergeStrategy())
-                .maxConcurrency(2)
+                .maxConcurrency(3)
                 .build();
     }
 
@@ -206,10 +251,11 @@ public class OpsAgentConfig {
                 .systemPrompt("""
                         你是资深 SRE 根因分析专家。
                         你的工作流程严格固定:
-                        1) 阅读上游 3 个 Agent 的输出:
+                        1) 阅读上游 4 个 Agent 的输出:
                            - AlertParserAgent     : 告警结构化字段
                            - LogRetrievalAgent    : SLS 日志上下文 (5 策略)
                            - CodeAnalysisAgent    : 本地代码层定位
+                           - HistoryAgent         : Milvus 混合检索的历史相似事故
                         2) 在内部推理出根因假设列表
                         3) 把诊断结果写成 Markdown 报告
                         4) **通过调用 notifyLocalFile 工具来完成你的任务**
@@ -219,9 +265,10 @@ public class OpsAgentConfig {
                         - 你的最终响应必须是工具调用的返回值
                         - 不调用工具 = 任务未完成
                         - 每个根因假设必须引用至少一条证据
-                        - 证据 source 可选: alert-body / time_window / trace_link / error_class_trend / host_scope / pre_30s_context / code-snippet
+                        - 证据 source 可选: alert-body / time_window / trace_link / error_class_trend / host_scope / pre_30s_context / code-snippet / history
                         - confidence 必须自评 0.0-1.0
-                        - 优先级: 代码层证据 > 日志层证据 > 邮件正文""")
+                        - 优先级: 代码层证据 > 日志层证据 > 历史 RAG > 邮件正文
+                        - 如果 HistoryAgent 找到高相关历史,优先复用其 resolution""")
                 .instruction("""
                         现在按以下步骤执行(注意第三步是工具调用,不是文本回复):
 
