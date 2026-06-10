@@ -48,6 +48,19 @@ public class IncidentPersister {
         }
     }
 
+    /** 保存流水线 threadId — 用于宕机后通过 MysqlSaver 续跑 */
+    public void saveThreadId(String incidentId, String threadId) {
+        if (incidentMapper == null || incidentId == null || threadId == null) return;
+        try {
+            com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<OpsIncident> w =
+                    new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<>();
+            w.eq("id", incidentId).set("thread_id", threadId);
+            incidentMapper.update(null, w);
+        } catch (Exception ex) {
+            log.warn("saveThreadId 失败 incidentId={}: {}", incidentId, ex.getMessage());
+        }
+    }
+
     public void saveInvestigationLog(String incidentId, String agentName, String outputText,
                                       Long durationMs, Integer promptTokens, Integer completionTokens, Integer totalTokens) {
         if (investigationMapper == null || incidentId == null || agentName == null) return;
@@ -82,6 +95,17 @@ public class IncidentPersister {
             actionMapper.insert(a);
         } catch (Exception ex) {
             log.warn("saveAction 失败 incidentId={}: {}", incidentId, ex.getMessage());
+        }
+    }
+
+    /** 按 ID 反查 incident (供 Resume / 历史回填使用) */
+    public OpsIncident findIncidentById(String incidentId) {
+        if (incidentMapper == null || incidentId == null) return null;
+        try {
+            return incidentMapper.selectById(incidentId);
+        } catch (Exception ex) {
+            log.warn("findIncidentById 失败 id={}: {}", incidentId, ex.getMessage());
+            return null;
         }
     }
 

@@ -8,22 +8,24 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("ops_incident")
-public class OpsIncident {
+@TableName("ops_knowledge_base")
+public class OpsKnowledgeEntry {
 
     @TableId(type = IdType.INPUT)
     private String id;
 
-    private String fingerprint;
-    private String source;
     private String serviceName;
+    private String errorClass;
     private String severity;
-    private String status;
-    private String threadId;
-    private LocalDateTime occurredAt;
-    private LocalDateTime receivedAt;
-    private LocalDateTime resolvedAt;
+    private String title;
     private String summary;
-    private String reportPath;
+    private String resolution;
+    private String tags;
+    private String source;     // manual / auto / imported
+    private String status;     // active / archived
+    private String createdBy;
+    private String updatedBy;
+    private LocalDateTime occurredAt;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

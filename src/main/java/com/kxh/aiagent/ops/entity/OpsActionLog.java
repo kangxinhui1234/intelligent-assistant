@@ -17,9 +17,17 @@ public class OpsActionLog {
     private String incidentId;
     private String actionType;
     private String target;
+
+    private String proposalPayload;
+    private String rationale;
+
+    private String status;
+    private String approveToken;
+
     private String triggeredBy;
     private String confirmedBy;
     private LocalDateTime triggeredAt;
+    private LocalDateTime confirmedAt;
     private LocalDateTime executedAt;
     private String resultStatus;
     private String resultMessage;

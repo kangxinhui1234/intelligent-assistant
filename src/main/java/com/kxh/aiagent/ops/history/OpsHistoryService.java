@@ -94,6 +94,20 @@ public class OpsHistoryService {
         }
     }
 
+    /** 按 id 从 Milvus 删除一条 — 用于知识库删除时同步清理 RAG 索引 */
+    public void deleteById(String id) {
+        if (id == null || id.isBlank()) return;
+        try {
+            client.delete(io.milvus.v2.service.vector.request.DeleteReq.builder()
+                    .collectionName(collection)
+                    .filter("id == \"" + escape(id) + "\"")
+                    .build());
+            log.info("[Milvus] 已删除 id={}", id);
+        } catch (Exception e) {
+            log.error("[Milvus] 删除失败 id={}: {}", id, e.getMessage(), e);
+        }
+    }
+
     /** 混合检索: BM25(text) + dense(embedding) + RRF rerank */
     public List<Map<String, Object>> hybridSearch(String queryText, String serviceName, String errorClass) {
         try {

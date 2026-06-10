@@ -6,15 +6,15 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit.ModelCallLimitHook;
 import com.alibaba.cloud.ai.graph.agent.hook.toolcalllimit.ToolCallLimitHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolerror.ToolErrorInterceptor;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.kxh.aiagent.agent.progress.ProgressEventBus;
 import com.kxh.aiagent.agent.progress.ProgressHook;
 import com.kxh.aiagent.ops.tool.AliyunSlsTool;
-import com.kxh.aiagent.ops.tool.DingTalkNotifyTool;
+import com.kxh.aiagent.ops.tool.EmailNotifyTool;
 import com.kxh.aiagent.ops.tool.HistoryQueryTool;
 import com.kxh.aiagent.ops.tool.LocalCodeTool;
 import com.kxh.aiagent.ops.tool.LocalFileNotifyTool;
-import com.kxh.aiagent.ops.tool.WechatWorkNotifyTool;
+import com.kxh.aiagent.ops.tool.ProposeActionTool;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
@@ -241,59 +241,59 @@ public class OpsAgentConfig {
     public ReactAgent rootCauseAgent(ChatModel dashscopeChatModel,
                                       ProgressEventBus progressEventBus,
                                       LocalFileNotifyTool localFileTool,
-                                      WechatWorkNotifyTool wechatWorkTool,
-                                      DingTalkNotifyTool dingTalkTool) {
-        ToolCallback[] tools = ToolCallbacks.from(localFileTool, wechatWorkTool, dingTalkTool);
+                                      EmailNotifyTool emailTool,
+                                      ProposeActionTool proposeActionTool) {
+        ToolCallback[] tools = ToolCallbacks.from(localFileTool, emailTool, proposeActionTool);
         return ReactAgent.builder()
                 .name("RootCauseAgent")
                 .model(dashscopeChatModel)
                 .tools(tools)
                 .systemPrompt("""
-                        你是资深 SRE 根因分析专家。
-                        你的工作流程严格固定:
-                        1) 阅读上游 4 个 Agent 的输出:
-                           - AlertParserAgent     : 告警结构化字段
-                           - LogRetrievalAgent    : SLS 日志上下文 (5 策略)
-                           - CodeAnalysisAgent    : 本地代码层定位
-                           - HistoryAgent         : Milvus 混合检索的历史相似事故
-                        2) 在内部推理出根因假设列表
-                        3) 把诊断结果写成 Markdown 报告
-                        4) **通过调用 notifyLocalFile 工具来完成你的任务**
+                        你是资深 SRE 根因分析专家 + HITL 决策提议者。
+                        工作流程严格固定:
+                        1) 阅读上游 4 个 Agent 的输出 (AlertParser / LogRetrieval / CodeAnalysis / HistoryAgent)
+                        2) 内部推理 2-3 个根因假设
+                        3) 调 notifyLocalFile 落本地 Markdown 报告
+                        4) **调 proposeAction 产出 1 个 HITL 建议动作 (必做!不调=任务未完成)**
 
-                        关键规则:
-                        - 你不能直接以聊天文本形式返回 JSON 或 Markdown
-                        - 你的最终响应必须是工具调用的返回值
-                        - 不调用工具 = 任务未完成
-                        - 每个根因假设必须引用至少一条证据
-                        - 证据 source 可选: alert-body / time_window / trace_link / error_class_trend / host_scope / pre_30s_context / code-snippet / history
-                        - confidence 必须自评 0.0-1.0
-                        - 优先级: 代码层证据 > 日志层证据 > 历史 RAG > 邮件正文
-                        - 如果 HistoryAgent 找到高相关历史,优先复用其 resolution""")
+                        根因证据规则:
+                        - 每个假设必须引用至少一条证据,优先级: 代码层 > 日志层 > 历史 RAG > 邮件正文
+                        - confidence 自评 0.0-1.0; HistoryAgent 命中高相关历史时,优先复用其 resolution
+
+                        HITL 动作选型(三选一):
+                        - SUPPRESS_FINGERPRINT: 已知抖动 / 误报 / 临时不修 -> 屏蔽 N 小时;params {"hours": 4}
+                        - NOTIFY_OWNER       : 严重影响业务 / 需上游介入 -> 升级邮件;params {"recipients":["sre@x.com"]}
+                        - MARK_AS_KNOWN      : 根因明确 + resolution 清晰 -> 入历史库供后续 RAG 命中
+                                                params {"errorClass":"xxx","resolution":"具体处置说明,100-300字"}
+                        选不出来就保守用 NOTIFY_OWNER。""")
                 .instruction("""
-                        现在按以下步骤执行(注意第三步是工具调用,不是文本回复):
+                        按以下顺序执行 (第 3 / 第 4 步都是必做工具调用):
 
-                        STEP 1 (内部思考): 列出 2-3 个根因假设,每个含 description / confidence / evidences
-                        STEP 2 (内部思考): 选最高 confidence 作为 topConfidence,写 suggestedAction
-                        STEP 3 (必做工具调用): 调用 notifyLocalFile,参数:
+                        STEP 1 (思考): 列出 2-3 个根因假设,每个含 description / confidence / evidences
+                        STEP 2 (思考): 决定建议哪一个 HITL 动作 (SUPPRESS / NOTIFY / MARK_AS_KNOWN)
+                        STEP 3 (调 notifyLocalFile):
                             title = [严重度] 服务名 - 简短根因
-                            markdownContent = 完整 Markdown 报告(含假设列表/置信度/证据/建议动作)
-                        STEP 4 (可选工具调用): 若用户群有 webhook 可同时调用 notifyWechatWork
+                            markdownContent = 完整 Markdown 报告
+                        STEP 4 (调 proposeAction):
+                            incidentId    = 输入里 "incidentId:" 字段的值 (原样照抄)
+                            actionType    = 上面 STEP 2 选定的枚举字符串
+                            target        = 简短目标摘要 (fingerprint 简写 / 收件人列表 / errorClass)
+                            paramsJson    = 严格 JSON 字符串,字段见 systemPrompt
+                            rationale     = 200-500 字, 解释为什么建议这个动作 (引用证据)
 
-                        Markdown 报告的建议结构:
+                        Markdown 报告结构建议:
                         ## 根因假设
                         ### 1. [描述]  置信度: XX%
                         - 证据: ...
-                        ### 2. ...
-                        ## 建议动作
-                        1. ...
-                        2. ...
+                        ## 建议动作 (HITL)
+                        - actionType: XXX
+                        - 理由: ...
 
-                        重要: 不要在对话中直接输出 JSON 文本。
-                        你的最终响应必须是 notifyLocalFile 工具调用后返回的文件路径字符串。""")
+                        终止条件: 必须既调过 notifyLocalFile 又调过 proposeAction 才算完成。""")
                 .hooks(
                         new ProgressHook(progressEventBus),
-                        ModelCallLimitHook.builder().runLimit(4).build(),
-                        ToolCallLimitHook.builder().runLimit(2).build()
+                        ModelCallLimitHook.builder().runLimit(5).build(),
+                        ToolCallLimitHook.builder().runLimit(3).build()
                 )
                 .interceptors(
                         ToolErrorInterceptor.builder().build()
@@ -308,7 +308,8 @@ public class OpsAgentConfig {
     public SequentialAgent opsIncidentPipeline(
             ReactAgent alertParserAgent,
             ParallelAgent investigationParallel,
-            ReactAgent rootCauseAgent) {
+            ReactAgent rootCauseAgent,
+            BaseCheckpointSaver opsCheckpointSaver) {
 
         return SequentialAgent.builder()
                 .name("OPS事故诊断流水线")
@@ -318,7 +319,7 @@ public class OpsAgentConfig {
                         investigationParallel,
                         rootCauseAgent
                 ))
-                .saver(MemorySaver.builder().build())
+                .saver(opsCheckpointSaver)
                 .build();
     }
 }

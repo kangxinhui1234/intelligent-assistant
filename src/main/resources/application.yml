@@ -79,6 +79,27 @@ spring:
       host: 127.0.0.1
       port: 6389
 
+  # SMTP 发件 (HITL 审批邮件 / 升级通知 都走这里)
+  mail:
+    host: ${OPS_SMTP_HOST:smtp.qq.com}
+    port: ${OPS_SMTP_PORT:465}
+    username: ${OPS_EMAIL_USER:}            # 同 IMAP 共用一个账号即可
+    password: ${OPS_EMAIL_PASS:}            # 同 IMAP 的授权码
+    protocol: smtps
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+            trust: '*'
+          starttls:
+            enable: true
+          timeout: 8000
+          connectiontimeout: 8000
+          writetimeout: 8000
+
 server:
   port: 8092
   servlet:
@@ -125,6 +146,15 @@ ops:
       webhook: ${OPS_WECHAT_WORK_WEBHOOK:}
     dingtalk:
       webhook: ${OPS_DINGTALK_WEBHOOK:}
+    email:
+      from: ${OPS_EMAIL_FROM:}              # 发件人(通常 = OPS_EMAIL_USER)
+      reviewers: ${OPS_EMAIL_REVIEWERS:}    # 审批人,逗号分隔,如 "owner1@x.com,owner2@x.com"
+  approval:
+    base-url: ${OPS_APPROVAL_BASE_URL:http://localhost:8092/api}   # 用于拼审批链接
+    token-ttl-hours: 48                     # token 有效期
+  suppression:
+    default-hours: 2                        # SUPPRESS_FINGERPRINT 默认屏蔽时长
+    max-hours: 24                           # 单次最长屏蔽时长上限
   source:
     email:
       enabled: false                       # 总开关,默认关闭

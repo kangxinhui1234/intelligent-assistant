@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>AIOps · 知识库管理</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root { --bg:#f6f8fa; --fg:#24292f; --muted:#6e7781; --border:#d0d7de;
+          --green:#1f883d; --red:#cf222e; --blue:#0969da; --yellow:#bf8700; }
+  * { box-sizing:border-box }
+  body { margin:0; font:14px/1.5 -apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--fg) }
+  header { background:#fff; border-bottom:1px solid var(--border); padding:14px 24px;
+           display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px }
+  header h1 { font-size:18px; margin:0 }
+  header nav { display:flex; gap:12px; align-items:center }
+  header nav a { color:var(--blue); text-decoration:none; font-size:13px }
+  header nav a.active { color:var(--fg); font-weight:600 }
+  .toolbar { padding:12px 24px; background:#fff; border-bottom:1px solid var(--border);
+             display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+  .toolbar input, .toolbar select {
+    padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:13px; background:#fff
+  }
+  .toolbar input { width:200px }
+  .toolbar button {
+    padding:6px 14px; border:1px solid var(--border); border-radius:6px; background:#fff; cursor:pointer; font-size:13px
+  }
+  .toolbar button.primary { background:var(--green); color:#fff; border-color:var(--green) }
+  .stats { padding:12px 24px; display:flex; gap:18px; color:var(--muted); font-size:12px }
+  .stats b { color:var(--fg); font-size:14px; margin-right:4px }
+  main { padding:0 24px 24px; max-width:1400px; margin:0 auto }
+  table { width:100%; border-collapse:collapse; background:#fff;
+          border:1px solid var(--border); border-radius:8px; overflow:hidden }
+  th, td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--border); vertical-align:top }
+  th { background:#f6f8fa; font-weight:600; color:var(--muted); font-size:12px; text-transform:uppercase }
+  tr:last-child td { border-bottom:none }
+  span.badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600 }
+  .b-active   { background:#dafbe1; color:var(--green) }
+  .b-archived { background:#eaeef2; color:var(--muted) }
+  .b-manual   { background:#ddf4ff; color:var(--blue) }
+  .b-auto     { background:#fff8c5; color:var(--yellow) }
+  .b-imported { background:#f5e6ff; color:#8250df }
+  button.row-btn { padding:4px 10px; border:1px solid var(--border); border-radius:5px; background:#fff;
+                   cursor:pointer; font-size:12px; margin-right:4px }
+  button.danger { color:var(--red); border-color:var(--red) }
+  .empty { padding:48px; text-align:center; color:var(--muted); background:#fff;
+           border:1px solid var(--border); border-radius:8px }
+  #modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:9 }
+  #modal.show { display:flex; align-items:center; justify-content:center }
+  .modal-content { background:#fff; padding:24px; border-radius:8px; min-width:600px; max-width:90vw; max-height:90vh; overflow:auto }
+  .modal-content h3 { margin:0 0 16px }
+  .field { margin-bottom:12px }
+  .field label { display:block; color:var(--muted); font-size:12px; margin-bottom:4px }
+  .field input, .field select, .field textarea {
+    width:100%; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:13px; font-family:inherit
+  }
+  .field textarea { min-height:80px; resize:vertical }
+  .modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:16px }
+  #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+           background:#24292f; color:#fff; padding:10px 20px; border-radius:6px;
+           opacity:0; transition:opacity .2s; pointer-events:none; font-size:13px }
+  #toast.show { opacity:1 }
+</style>
+</head>
+<body>
+<header>
+  <h1>📚 AIOps · 知识库管理</h1>
+  <nav>
+    <a href="actions.html">HITL 审批</a>
+    <a href="knowledge.html" class="active">知识库</a>
+  </nav>
+</header>
+
+<div class="toolbar">
+  <input id="kw" placeholder="关键词 (title/summary/resolution/errorClass)">
+  <input id="svc" placeholder="serviceName">
+  <select id="status">
+    <option value="">全部状态</option>
+    <option value="active">active</option>
+    <option value="archived">archived</option>
+  </select>
+  <button onclick="load()">搜索</button>
+  <button class="primary" onclick="openModal()">+ 新增知识</button>
+  <span style="flex:1"></span>
+  <button onclick="loadStats()">刷新</button>
+</div>
+
+<div class="stats" id="stats">加载统计中…</div>
+
+<main id="content"><div class="empty">加载中…</div></main>
+
+<div id="modal" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="modal-content">
+    <h3 id="mtitle">新增知识</h3>
+    <input type="hidden" id="f_id">
+    <div class="field"><label>title*</label><input id="f_title"></div>
+    <div class="field" style="display:flex;gap:12px">
+      <div style="flex:1"><label>serviceName</label><input id="f_service"></div>
+      <div style="flex:1"><label>errorClass</label><input id="f_errorClass"></div>
+      <div style="width:120px"><label>severity</label>
+        <select id="f_severity">
+          <option value="">-</option><option>P0</option><option>P1</option><option>P2</option><option>P3</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>summary (现象 / 触发场景)</label><textarea id="f_summary"></textarea></div>
+    <div class="field"><label>resolution (处置方案 / 修复步骤)*</label><textarea id="f_resolution" style="min-height:140px"></textarea></div>
+    <div class="field" style="display:flex;gap:12px">
+      <div style="flex:1"><label>tags (逗号分隔)</label><input id="f_tags"></div>
+      <div style="width:120px"><label>status</label>
+        <select id="f_status">
+          <option value="active">active</option>
+          <option value="archived">archived</option>
+        </select>
+      </div>
+      <div style="width:120px"><label>source</label>
+        <select id="f_source">
+          <option value="manual">manual</option>
+          <option value="imported">imported</option>
+          <option value="auto">auto</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeModal()">取消</button>
+      <button class="primary" style="background:#1f883d;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer"
+              onclick="save()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = location.pathname.startsWith('/api') ? '/api' : '';
+
+async function load() {
+  const kw = document.getElementById('kw').value;
+  const svc = document.getElementById('svc').value;
+  const status = document.getElementById('status').value;
+  const params = new URLSearchParams({ size: 50 });
+  if (kw) params.set('keyword', kw);
+  if (svc) params.set('service', svc);
+  if (status) params.set('status', status);
+  try {
+    const r = await fetch(`${API}/ops/knowledge?` + params);
+    const data = await r.json();
+    render(data.records || []);
+  } catch (e) {
+    document.getElementById('content').innerHTML =
+      `<div class="empty">加载失败: ${e.message}</div>`;
+  }
+}
+
+async function loadStats() {
+  try {
+    const r = await fetch(`${API}/ops/knowledge/stats`);
+    const s = await r.json();
+    const bySrc = (s.bySource || []).map(x => `${x.source}:${x.count}`).join(' · ');
+    document.getElementById('stats').innerHTML =
+      `共 <b>${s.total ?? 0}</b> 条 · active <b style="color:#1f883d">${s.active ?? 0}</b> · archived <b style="color:#888">${s.archived ?? 0}</b> · 来源分布: ${bySrc || '-'}`;
+  } catch (e) {
+    document.getElementById('stats').textContent = '统计加载失败: ' + e.message;
+  }
+}
+
+function render(rows) {
+  const root = document.getElementById('content');
+  if (!rows.length) { root.innerHTML = '<div class="empty">无匹配记录</div>'; return; }
+  const html = rows.map(r => `
+    <tr>
+      <td><div style="font-weight:600">${esc(r.title || '-')}</div>
+          <div style="color:#888;font-size:12px;font-family:Menlo,monospace">${esc(r.id)}</div></td>
+      <td>${esc(r.serviceName || '-')}<br>
+          <span style="color:#888;font-size:12px">${esc(r.errorClass || '-')}</span></td>
+      <td>${r.severity ? `<span class="badge" style="background:#fff8c5;color:#bf8700">${r.severity}</span>` : '-'}</td>
+      <td><span class="badge b-${r.status}">${r.status}</span>
+          <span class="badge b-${r.source}" style="margin-left:4px">${r.source}</span></td>
+      <td style="max-width:320px;color:#444">${esc(short(r.summary, 120))}</td>
+      <td style="font-size:12px;color:#888">${fmt(r.updatedAt)}<br>by ${esc(r.updatedBy || '-')}</td>
+      <td>
+        <button class="row-btn" onclick='edit(${JSON.stringify(r)})'>编辑</button>
+        <button class="row-btn danger" onclick='del("${r.id}")'>删除</button>
+      </td>
+    </tr>`).join('');
+  root.innerHTML = `<table><thead><tr>
+    <th>标题 / ID</th><th>service / errorClass</th><th>severity</th>
+    <th>状态 / 来源</th><th>summary</th><th>更新</th><th>操作</th>
+  </tr></thead><tbody>${html}</tbody></table>`;
+}
+
+function openModal(e) {
+  document.getElementById('mtitle').textContent = e ? `编辑 ${e.id}` : '新增知识';
+  ['id','title','service','errorClass','severity','summary','resolution','tags','status','source'].forEach(k => {
+    const el = document.getElementById('f_' + k);
+    if (!el) return;
+    const v = e ? (e[k === 'service' ? 'serviceName' : k] ?? '') : '';
+    el.value = v;
+  });
+  if (!e) document.getElementById('f_status').value = 'active';
+  if (!e) document.getElementById('f_source').value = 'manual';
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+function edit(r) { openModal(r); }
+
+async function save() {
+  const id = document.getElementById('f_id').value;
+  const payload = {
+    id: id || undefined,
+    title: val('f_title'),
+    serviceName: val('f_service'),
+    errorClass: val('f_errorClass'),
+    severity: val('f_severity'),
+    summary: val('f_summary'),
+    resolution: val('f_resolution'),
+    tags: val('f_tags'),
+    status: val('f_status'),
+    source: val('f_source')
+  };
+  if (!payload.title || !payload.resolution) {
+    toast('⚠️ title 和 resolution 必填'); return;
+  }
+  const operator = localStorage.getItem('opsOperator') || prompt('你的名字 (会记住):', 'admin') || 'anonymous';
+  localStorage.setItem('opsOperator', operator);
+  try {
+    const url = id
+      ? `${API}/ops/knowledge/${id}?operator=${encodeURIComponent(operator)}`
+      : `${API}/ops/knowledge?operator=${encodeURIComponent(operator)}`;
+    const r = await fetch(url, {
+      method: id ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    toast('✅ 已保存');
+    closeModal();
+    load(); loadStats();
+  } catch (e) { toast('⚠️ 保存失败: ' + e.message); }
+}
+
+async function del(id) {
+  if (!confirm(`删除知识 ${id}? (同步从 Milvus 移除)`)) return;
+  try {
+    const r = await fetch(`${API}/ops/knowledge/${id}`, { method: 'DELETE' });
+    const data = await r.json();
+    toast(data.ok ? '✅ 已删除' : '⚠️ 失败');
+    load(); loadStats();
+  } catch (e) { toast('⚠️ 删除失败: ' + e.message); }
+}
+
+function val(id) { return document.getElementById(id).value.trim(); }
+function esc(s) { if (s == null) return ''; return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function short(s, n) { if (!s) return ''; s = String(s); return s.length > n ? s.slice(0, n) + '…' : s; }
+function fmt(t) { if (!t) return ''; return String(t).replace('T', ' ').slice(0, 19); }
+function toast(m) {
+  const el = document.getElementById('toast');
+  el.textContent = m; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+load(); loadStats();
+</script>
+</body>
+</html>

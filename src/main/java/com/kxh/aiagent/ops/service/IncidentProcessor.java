@@ -20,7 +20,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * 告警处理核心服务 — Webhook / Email IMAP / 主动巡检 三种入口共用此服务。
+ * 告警处理核心服务 — Webhook / Email IMAP / MQ Consumer / 主动巡检 多入口共用。
+ * <p>
+ * 三种触发场景:
+ *  1) {@link #process(RawAlert, StreamProgressEmitter, String)}  — 新告警全流程 (去重 + 预算 + 持久化 + 流水线)
+ *  2) {@link #launchPipelineAsync}                                — 仅启动流水线 (供 MQ Consumer 调用,避免双重去重)
+ *  3) {@link #resumeIncident(String, StreamProgressEmitter)}      — 已存在的 threadId 从 MysqlSaver 加载状态续跑
  */
 @Service
 public class IncidentProcessor {
@@ -76,12 +81,13 @@ public class IncidentProcessor {
                             snap.serviceIncidentsUsed(), snap.serviceIncidentsMax()));
         }
 
-        // 3. 持久化主记录 + 桥接 requestId/incidentId
+        // 3. 持久化主记录 + 桥接 requestId/incidentId + 落 threadId
         persister.saveIncident(incident);
         persistenceWiring.track(requestId, incident.incidentId());
+        String threadId = UUID.randomUUID().toString();
+        persister.saveThreadId(incident.incidentId(), threadId);
 
         // 4. 启动流水线
-        String threadId = UUID.randomUUID().toString();
         if (optionalProgress != null) {
             optionalProgress.progress("OPS事故诊断流水线",
                     "开始诊断: incidentId=" + incident.incidentId()
@@ -89,69 +95,101 @@ public class IncidentProcessor {
                             + " threadId=" + threadId);
         }
 
-        CompletableFuture.runAsync(() -> {
-            try {
-                RunnableConfig config = RunnableConfig.builder()
-                        .threadId(threadId)
-                        .addMetadata(ProgressHook.CONFIG_KEY, requestId)
-                        .build();
-                String input = PipelineInputBuilder.build(incident);
-                CountDownLatch latch = new CountDownLatch(1);
-                opsIncidentPipeline.streamMessages(input, config).subscribe(
-                        msg -> {},
-                        err -> {
-                            log.error("流水线异常 incidentId={}: {}", incident.incidentId(), err.getMessage(), err);
-                            if (optionalProgress != null) {
-                                optionalProgress.agentError("OPS事故诊断流水线", err.getMessage());
-                            }
-                            latch.countDown();
-                        },
-                        () -> {
-                            log.info("流水线完成 incidentId={}", incident.incidentId());
-                            if (optionalProgress != null) optionalProgress.complete();
-                            latch.countDown();
-                        });
-                latch.await();
-                persister.markResolved(incident.incidentId(), null);
-                // 流水线完成 → 自动入历史 RAG 库
-                autoUpsertHistory(incident);
-            } catch (Exception e) {
-                log.error("流水线执行异常 incidentId={}: {}", incident.incidentId(), e.getMessage(), e);
-                if (optionalProgress != null) optionalProgress.error(e);
-            } finally {
-                progressEventBus.unregister(requestId);
-                persistenceWiring.untrack(requestId);
-            }
-        });
-
+        launchPipelineAsync(incident, threadId, requestId, optionalProgress);
         return ProcessOutcome.launched(incident, threadId);
     }
 
     /**
-     * 流水线完成后,把 RootCauseAgent 的输出当作 resolution 写入 Milvus 历史库。
-     * 注意: 同一 incidentId upsert,所以重跑也不会重复。
+     * 异步启动流水线 — 抽出来便于 MQ Consumer / Resume 复用。
+     * 内部用 CompletableFuture.runAsync 避免阻塞调用线程。
      */
-    private void autoUpsertHistory(IncidentEvent incident) {
+    public void launchPipelineAsync(IncidentEvent incident, String threadId,
+                                     String requestId, StreamProgressEmitter optionalProgress) {
+        CompletableFuture.runAsync(() -> runPipelineBlocking(
+                PipelineInputBuilder.build(incident), incident.incidentId(),
+                threadId, requestId, optionalProgress, "launch"));
+    }
+
+    /**
+     * 从已有 threadId 续跑 — MysqlSaver 会自动加载断点状态,Sequential 从未完成的 stage 继续。
+     * 如果 threadId 不存在(MySQL 里 incident 没有),返回 ResumeResult.notFound。
+     */
+    public ResumeResult resumeIncident(String threadId, StreamProgressEmitter optionalProgress) {
+        if (threadId == null || threadId.isBlank()) {
+            return ResumeResult.fail("threadId 不能为空");
+        }
+        log.info("═══ 从断点续跑流水线: threadId={} ═══", threadId);
+        String requestId = UUID.randomUUID().toString();
+        // 续跑不需要从头投告警内容 — 框架按 threadId 自动加载状态。
+        // 但 streamMessages 还是要传一个 input 字符串,这里用占位符。
+        CompletableFuture.runAsync(() -> runPipelineBlocking(
+                "继续执行 (resume threadId=" + threadId + ")",
+                null, threadId, requestId, optionalProgress, "resume"));
+        return ResumeResult.launched(threadId, requestId);
+    }
+
+    private void runPipelineBlocking(String input, String incidentId,
+                                      String threadId, String requestId,
+                                      StreamProgressEmitter optionalProgress, String mode) {
+        try {
+            RunnableConfig config = RunnableConfig.builder()
+                    .threadId(threadId)
+                    .addMetadata(ProgressHook.CONFIG_KEY, requestId)
+                    .build();
+            CountDownLatch latch = new CountDownLatch(1);
+            opsIncidentPipeline.streamMessages(input, config).subscribe(
+                    msg -> {},
+                    err -> {
+                        log.error("流水线异常 mode={} threadId={}: {}", mode, threadId, err.getMessage(), err);
+                        if (optionalProgress != null) {
+                            optionalProgress.agentError("OPS事故诊断流水线", err.getMessage());
+                        }
+                        latch.countDown();
+                    },
+                    () -> {
+                        log.info("流水线完成 mode={} threadId={}", mode, threadId);
+                        if (optionalProgress != null) optionalProgress.complete();
+                        latch.countDown();
+                    });
+            latch.await();
+            if (incidentId != null) {
+                persister.markResolved(incidentId, null);
+                autoUpsertHistoryByIncidentId(incidentId);
+            }
+        } catch (Exception e) {
+            log.error("流水线执行异常 mode={} threadId={}: {}", mode, threadId, e.getMessage(), e);
+            if (optionalProgress != null) optionalProgress.error(e);
+        } finally {
+            if (requestId != null) {
+                progressEventBus.unregister(requestId);
+                persistenceWiring.untrack(requestId);
+            }
+        }
+    }
+
+    private void autoUpsertHistoryByIncidentId(String incidentId) {
         if (historyService == null) return;
         try {
-            // 从 PersistenceWiring/MySQL 异步反查可能延迟,这里采用最简单粗暴方式:
-            // 通过 IncidentPersister 读 MySQL 取 RootCauseAgent 的最新输出
-            // 由 PersistenceWiring 已经写入,这里再异步触发一次 upsert
             // 简化版: 用 summary 作为最小可用记录,resolution 留空
             // 真实 resolution 由 OpsHistoryController.migrate 端点批量回填更稳妥
+            // resume 场景下也走这条 — 续跑完成同样要刷新历史 RAG
+            com.kxh.aiagent.ops.entity.OpsIncident row = persister.findIncidentById(incidentId);
+            if (row == null) return;
             com.kxh.aiagent.ops.history.OpsHistoryRecord record =
                     new com.kxh.aiagent.ops.history.OpsHistoryRecord(
-                            incident.incidentId(),
-                            incident.serviceName(),
+                            row.getId(),
+                            row.getServiceName(),
                             null,
-                            incident.severity() == null ? null : incident.severity().name(),
-                            incident.occurredAt() == null ? 0 : incident.occurredAt().getEpochSecond(),
-                            incident.summary(),
-                            "" // resolution 留空,后续由 migrate 端点完整回填
+                            row.getSeverity(),
+                            row.getOccurredAt() == null ? 0
+                                    : row.getOccurredAt().atZone(java.time.ZoneId.systemDefault())
+                                            .toEpochSecond(),
+                            row.getSummary(),
+                            ""
                     );
             historyService.upsert(record);
         } catch (Exception e) {
-            log.warn("autoUpsertHistory 失败 incidentId={}: {}", incident.incidentId(), e.getMessage());
+            log.warn("autoUpsertHistory 失败 incidentId={}: {}", incidentId, e.getMessage());
         }
     }
 
@@ -169,6 +207,15 @@ public class IncidentProcessor {
         }
         public static ProcessOutcome budgetDenied(IncidentEvent ev, String reason) {
             return new ProcessOutcome(Status.BUDGET_DENIED, ev, reason);
+        }
+    }
+
+    public record ResumeResult(boolean ok, String threadId, String requestId, String message) {
+        public static ResumeResult launched(String tid, String rid) {
+            return new ResumeResult(true, tid, rid, "resumed");
+        }
+        public static ResumeResult fail(String msg) {
+            return new ResumeResult(false, null, null, msg);
         }
     }
 }
